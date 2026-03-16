@@ -10,7 +10,7 @@ object SyncScheduler {
     private const val WORK_NAME = "skopje_sync"
 
     fun schedule(context: Context) {
-        val request = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES).build()
+        val request = PeriodicWorkRequestBuilder<SyncWorker>(5, TimeUnit.MINUTES).build()
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             WORK_NAME,
             ExistingPeriodicWorkPolicy.KEEP,

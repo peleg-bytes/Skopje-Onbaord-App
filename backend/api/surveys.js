@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   }
 
   const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -43,8 +43,13 @@ export default async function handler(req, res) {
   const { data: surveys, error } = await query;
 
   if (error) {
+    console.error('Supabase surveys fetch error:', error);
     res.setHeader('Access-Control-Allow-Origin', '*');
-    return res.status(500).json({ error: 'Failed to fetch surveys' });
+    return res.status(500).json({
+      error: 'Failed to fetch surveys',
+      details: error.message,
+      code: error.code,
+    });
   }
 
   res.setHeader('Access-Control-Allow-Origin', '*');

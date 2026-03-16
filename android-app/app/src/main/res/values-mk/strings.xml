@@ -40,6 +40,10 @@
     <string name="api_url">API URL (Сервер)</string>
     <string name="api_url_hint">https://your-app.vercel.app</string>
 
+    <!-- Submit feedback -->
+    <string name="submit_success">Успешно поднесено</string>
+    <string name="submit_saved_offline">Зачувано. Ќе се синхронизира кога ќе биде онлајн.</string>
+
     <!-- Misc -->
     <string name="back">Назад</string>
 </resources>

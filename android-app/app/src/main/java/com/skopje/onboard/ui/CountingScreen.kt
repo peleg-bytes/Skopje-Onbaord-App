@@ -1,6 +1,11 @@
 package com.skopje.onboard.ui
 
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.view.HapticFeedbackConstants
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,9 +41,27 @@ fun CountingScreen(
     onAdd: (Int) -> Unit,
     onReset: () -> Unit,
     onSubmit: () -> Unit,
-    onVibrate: () -> Unit,
 ) {
     val view = LocalView.current
+    val context = LocalContext.current
+    val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        (context.getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
+    } else {
+        @Suppress("DEPRECATION")
+        context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? Vibrator
+    }
+
+    fun doVibrate() {
+        view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+        vibrator?.let {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                it.vibrate(VibrationEffect.createOneShot(30, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                it.vibrate(30)
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -86,11 +109,11 @@ fun CountingScreen(
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
                 CounterButton(label = "+5") {
-                    view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                    doVibrate()
                     onAdd(5)
                 }
                 CounterButton(label = "+1") {
-                    view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                    doVibrate()
                     onAdd(1)
                 }
             }
@@ -99,11 +122,11 @@ fun CountingScreen(
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
                 CounterButton(label = "-1", enabled = passengerCount > 0) {
-                    view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                    doVibrate()
                     onAdd(-1)
                 }
                 CounterButton(label = "-5", enabled = passengerCount >= 5) {
-                    view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                    doVibrate()
                     onAdd(-5)
                 }
             }
@@ -115,12 +138,18 @@ fun CountingScreen(
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
                 Button(
-                    onClick = onReset,
+                    onClick = {
+                        doVibrate()
+                        onReset()
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.secondary),
                 ) {
                     Text(stringResource(R.string.reset_counter))
                 }
-                Button(onClick = onSubmit) {
+                Button(onClick = {
+                    doVibrate()
+                    onSubmit()
+                }) {
                     Text(stringResource(R.string.done_submit))
                 }
             }

@@ -18,32 +18,48 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.view.WindowCompat
-import com.skopje.onboard.ui.ConfirmDialog
 import com.skopje.onboard.ui.CountingScreen
+import com.skopje.onboard.ui.ResetConfirmDialog
 import com.skopje.onboard.ui.ResumeDialog
 import com.skopje.onboard.ui.SettingsScreen
+import com.skopje.onboard.ui.SubmitConfirmDialog
 import com.skopje.onboard.ui.StartSurveyScreen
 import com.skopje.onboard.ui.SurveyViewModel
 import com.skopje.onboard.ui.Screen
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
+    @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val prefs = com.skopje.onboard.util.Preferences(this)
+        val lang = runBlocking { prefs.language.first() }
+        val locale = Locale(if (lang == "mk") "mk" else "en")
+        val config = Configuration(resources.configuration).apply { setLocale(locale) }
+        resources.updateConfiguration(config, resources.displayMetrics)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
-            val requestPermission = rememberLauncherForActivityResult(
-                ActivityResultContracts.RequestPermission()
+            val requestPermissions = rememberLauncherForActivityResult(
+                ActivityResultContracts.RequestMultiplePermissions()
             ) { }
             LaunchedEffect(Unit) {
-                requestPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                val permissionsToRequest = mutableListOf<String>()
+                if (this@MainActivity.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    permissionsToRequest.add(Manifest.permission.ACCESS_FINE_LOCATION)
+                }
+                if (this@MainActivity.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    permissionsToRequest.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+                }
+                if (permissionsToRequest.isNotEmpty()) {
+                    requestPermissions.launch(permissionsToRequest.toTypedArray())
+                }
             }
             val viewModel = androidx.lifecycle.viewmodel.compose.viewModel<SurveyViewModel>()
             val state by viewModel.state.collectAsState()
-            val prefs = com.skopje.onboard.util.Preferences(this)
             val theme by prefs.theme.collectAsState(initial = "system")
             val language by prefs.language.collectAsState(initial = "mk")
-            val apiUrl by prefs.apiUrl.collectAsState(initial = "https://skopje-onboard-survey.vercel.app")
 
             LaunchedEffect(Unit) { viewModel.checkResumeOnStart() }
 
@@ -53,10 +69,10 @@ class MainActivity : ComponentActivity() {
                 else -> isSystemInDarkTheme()
             }
 
-            val config = LocalConfiguration.current
+            val currentConfig = LocalConfiguration.current
             LaunchedEffect(language) {
-                val locale = Locale(if (language == "mk") "mk" else "en")
-                val newConfig = Configuration(config).apply { setLocale(locale) }
+                val appLocale = Locale(if (language == "mk") "mk" else "en")
+                val newConfig = Configuration(currentConfig).apply { setLocale(appLocale) }
                 resources.updateConfiguration(newConfig, resources.displayMetrics)
             }
 
@@ -87,15 +103,12 @@ class MainActivity : ComponentActivity() {
                         onAdd = viewModel::addCount,
                         onReset = viewModel::requestReset,
                         onSubmit = viewModel::requestSubmit,
-                        onVibrate = { },
                     )
                     Screen.Settings -> SettingsScreen(
                         language = language,
                         theme = theme,
-                        apiUrl = apiUrl,
                         onLanguageChange = viewModel::setLanguage,
                         onThemeChange = viewModel::setTheme,
-                        onApiUrlChange = viewModel::setApiUrl,
                         onBack = viewModel::navigateBack,
                     )
                 }
@@ -107,13 +120,13 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 if (state.showResetDialog) {
-                    ConfirmDialog.ResetConfirmDialog(
+                    ResetConfirmDialog(
                         onConfirm = viewModel::resetCounter,
                         onDismiss = viewModel::dismissResetDialog,
                     )
                 }
                 if (state.showSubmitDialog) {
-                    ConfirmDialog.SubmitConfirmDialog(
+                    SubmitConfirmDialog(
                         onConfirm = viewModel::submitSurvey,
                         onDismiss = viewModel::dismissSubmitDialog,
                     )

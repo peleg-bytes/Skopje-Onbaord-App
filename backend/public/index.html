@@ -313,7 +313,10 @@
       list.innerHTML = '<div class="empty-state">Loading...</div>';
       try {
         const r = await fetch(base + '/api/export-options');
-        const d = await r.json();
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          throw new Error(d.error || 'API returned ' + r.status);
+        }
         const options = d.exportOptions || [];
         if (options.length === 0) {
           list.innerHTML = '<div class="empty-state">No survey data yet. Surveys will appear here once submitted from the app.</div>';
@@ -350,7 +353,7 @@
           });
         });
       } catch (e) {
-        list.innerHTML = '<div class="empty-state">Failed to load export options.</div>';
+        list.innerHTML = '<div class="empty-state"><strong>Failed to load export options.</strong><br><small style="margin-top:0.5rem;display:block">' + escapeHtml(e.message || String(e)) + '</small><br><small>Check Vercel env vars: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY. Ensure the surveys table exists in Supabase.</small></div>';
       }
       loadStats();
     }

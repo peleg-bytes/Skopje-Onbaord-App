@@ -40,6 +40,10 @@
     <string name="api_url">API URL (Backend)</string>
     <string name="api_url_hint">https://your-app.vercel.app</string>
 
+    <!-- Submit feedback -->
+    <string name="submit_success">Submitted successfully</string>
+    <string name="submit_saved_offline">Saved. Will sync when online.</string>
+
     <!-- Misc -->
     <string name="back">Back</string>
 </resources>

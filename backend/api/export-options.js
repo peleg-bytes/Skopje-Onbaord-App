@@ -14,11 +14,11 @@ export default async function handler(req, res) {
   }
 
   const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    return res.status(500).json({ error: 'Server configuration error' });
+    return res.status(500).json({ error: 'Server configuration error: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SECRET_KEY) must be set in Vercel.' });
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
@@ -29,8 +29,9 @@ export default async function handler(req, res) {
     .order('created_at', { ascending: false });
 
   if (error) {
+    console.error('Export options Supabase error:', error);
     res.setHeader('Access-Control-Allow-Origin', '*');
-    return res.status(500).json({ error: 'Failed to fetch export options' });
+    return res.status(500).json({ error: 'Database error: ' + (error.message || 'Failed to fetch export options') });
   }
 
   const dateSet = new Set();

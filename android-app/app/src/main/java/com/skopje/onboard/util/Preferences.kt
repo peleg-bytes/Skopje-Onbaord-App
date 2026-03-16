@@ -17,7 +17,6 @@ object PreferencesKeys {
     val SURVEYOR_ID = stringPreferencesKey("surveyor_id")
     val LANGUAGE = stringPreferencesKey("language") // "mk" or "en"
     val THEME = stringPreferencesKey("theme") // "light", "dark", "system"
-    val API_URL = stringPreferencesKey("api_url")
 }
 
 class Preferences(private val context: Context) {
@@ -26,9 +25,6 @@ class Preferences(private val context: Context) {
     val surveyorId: Flow<String?> = context.dataStore.data.map { it[PreferencesKeys.SURVEYOR_ID] }
     val language: Flow<String> = context.dataStore.data.map { it[PreferencesKeys.LANGUAGE] ?: "mk" }
     val theme: Flow<String> = context.dataStore.data.map { it[PreferencesKeys.THEME] ?: "system" }
-    val apiUrl: Flow<String> = context.dataStore.data.map {
-        it[PreferencesKeys.API_URL] ?: "https://skopje-onboard-survey.vercel.app"
-    }
 
     suspend fun setStationName(value: String) {
         context.dataStore.edit { it[PreferencesKeys.STATION_NAME] = value }
@@ -46,11 +42,6 @@ class Preferences(private val context: Context) {
         context.dataStore.edit { it[PreferencesKeys.THEME] = value }
     }
 
-    suspend fun setApiUrl(value: String) {
-        context.dataStore.edit { it[PreferencesKeys.API_URL] = value }
-    }
-
     suspend fun getStationName(): String? = stationName.first()
     suspend fun getSurveyorId(): String? = surveyorId.first()
-    suspend fun getApiUrl(): String = apiUrl.first()
 }

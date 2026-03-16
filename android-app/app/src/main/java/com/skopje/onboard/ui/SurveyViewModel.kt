@@ -1,14 +1,21 @@
 package com.skopje.onboard.ui
 
 import android.app.Application
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
+import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.skopje.onboard.data.AppDatabase
 import com.skopje.onboard.data.Survey
+import com.skopje.onboard.sync.SyncHelper
 import com.skopje.onboard.sync.SyncScheduler
-import com.skopje.onboard.sync.SyncWorker
 import com.skopje.onboard.util.LocationHelper
+import com.skopje.onboard.util.AppConfig
 import com.skopje.onboard.util.Preferences
+import com.skopje.onboard.R
 import com.skopje.onboard.util.checkServerOnline
 import com.skopje.onboard.util.GpsStatus
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,7 +40,10 @@ data class SurveyUiState(
     val showResumeDialog: Boolean = false,
     val showResetDialog: Boolean = false,
     val showSubmitDialog: Boolean = false,
+    val submitFeedback: SubmitFeedback? = null,
 )
+
+enum class SubmitFeedback { SUCCESS, SAVED_OFFLINE }
 
 enum class Screen { Start, Counting, Settings }
 
@@ -48,6 +58,7 @@ class SurveyViewModel(application: Application) : AndroidViewModel(application) 
 
     init {
         SyncScheduler.schedule(application)
+        viewModelScope.launch { SyncHelper.syncNow(application) }
     }
 
     fun checkResumeOnStart() {
@@ -154,17 +165,45 @@ class SurveyViewModel(application: Application) : AndroidViewModel(application) 
                 isSubmitted = true,
             )
             dao.update(updated)
+            val result = SyncHelper.syncNow(getApplication())
             androidx.work.WorkManager.getInstance(getApplication()).enqueue(
                 androidx.work.OneTimeWorkRequestBuilder<com.skopje.onboard.sync.SyncWorker>().build()
             )
+            val feedback = if (result is SyncHelper.SyncResult.Success) SubmitFeedback.SUCCESS else SubmitFeedback.SAVED_OFFLINE
             _state.update {
                 it.copy(
                     screen = Screen.Start,
                     currentSurvey = null,
                     passengerCount = 0,
                     showSubmitDialog = false,
+                    submitFeedback = feedback,
                 )
             }
+            withContext(Dispatchers.Main) {
+                vibrateSubmitFeedback(getApplication(), feedback)
+                val msg = if (feedback == SubmitFeedback.SUCCESS) getApplication().getString(R.string.submit_success)
+                else getApplication().getString(R.string.submit_saved_offline)
+                Toast.makeText(getApplication(), msg, Toast.LENGTH_LONG).show()
+            }
+            kotlinx.coroutines.delay(100)
+            _state.update { it.copy(submitFeedback = null) }
+        }
+    }
+
+    private fun vibrateSubmitFeedback(context: android.content.Context, feedback: SubmitFeedback) {
+        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            (context.getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)?.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? Vibrator
+        } ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val pattern = if (feedback == SubmitFeedback.SUCCESS) longArrayOf(0, 80, 80, 80) else longArrayOf(0, 100)
+            val amplitudes = if (feedback == SubmitFeedback.SUCCESS) intArrayOf(0, 80, 0, 80) else intArrayOf(0, 80)
+            vibrator.vibrate(VibrationEffect.createWaveform(pattern, amplitudes, -1))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(if (feedback == SubmitFeedback.SUCCESS) longArrayOf(0, 80, 80, 80) else longArrayOf(0, 100))
         }
     }
 
@@ -172,7 +211,7 @@ class SurveyViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             _state.update { it.copy(gpsStatus = GpsStatus.ACQUIRING) }
             val loc = withContext(Dispatchers.IO) { locationHelper.getLocation() }
-            val online = withContext(Dispatchers.IO) { checkServerOnline(prefs.getApiUrl()) }
+            val online = withContext(Dispatchers.IO) { checkServerOnline(AppConfig.API_BASE_URL) }
             _state.update {
                 it.copy(gpsStatus = loc.status, serverOnline = online)
             }
@@ -194,9 +233,5 @@ class SurveyViewModel(application: Application) : AndroidViewModel(application) 
 
     fun setTheme(theme: String) {
         viewModelScope.launch { prefs.setTheme(theme) }
-    }
-
-    fun setApiUrl(url: String) {
-        viewModelScope.launch { prefs.setApiUrl(url) }
     }
 }

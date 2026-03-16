@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,10 +30,8 @@ import com.skopje.onboard.R
 fun SettingsScreen(
     language: String,
     theme: String,
-    apiUrl: String,
     onLanguageChange: (String) -> Unit,
     onThemeChange: (String) -> Unit,
-    onApiUrlChange: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     Scaffold(
@@ -42,7 +40,7 @@ fun SettingsScreen(
                 title = { Text(stringResource(R.string.settings)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 }
             )
@@ -76,17 +74,6 @@ fun SettingsScreen(
                     Text(label, modifier = Modifier.padding(start = 8.dp))
                 }
             }
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(stringResource(R.string.api_url), style = androidx.compose.material3.MaterialTheme.typography.titleSmall)
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = apiUrl,
-                onValueChange = onApiUrlChange,
-                placeholder = { Text(stringResource(R.string.api_url_hint)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
         }
     }
 }
