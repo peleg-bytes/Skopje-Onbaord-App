@@ -47,6 +47,16 @@ export default async function handler(req, res) {
   const byStation = new Map();
   const byDate = new Map();
   const byHour = new Map();
+  const timeSlots = [
+    { key: '6-9', label: 'Morning (6–9)', hours: [6, 7, 8], passengers: 0, surveys: 0 },
+    { key: '9-12', label: 'Late morning (9–12)', hours: [9, 10, 11], passengers: 0, surveys: 0 },
+    { key: '12-14', label: 'Midday (12–14)', hours: [12, 13], passengers: 0, surveys: 0 },
+    { key: '14-17', label: 'Afternoon (14–17)', hours: [14, 15, 16], passengers: 0, surveys: 0 },
+    { key: '17-19', label: 'Peak evening (17–19)', hours: [17, 18], passengers: 0, surveys: 0 },
+    { key: '19-22', label: 'Evening (19–22)', hours: [19, 20, 21], passengers: 0, surveys: 0 },
+    { key: '22-6', label: 'Night (22–6)', hours: [22, 23, 0, 1, 2, 3, 4, 5], passengers: 0, surveys: 0 },
+  ];
+  const slotMap = new Map(timeSlots.map((s) => [s.key, { ...s }]));
   let totalSurveys = 0;
   let totalPassengers = 0;
 
@@ -77,6 +87,15 @@ export default async function handler(req, res) {
       h.surveys += 1;
       h.passengers += count;
       byHour.set(hour, h);
+
+      for (const slot of timeSlots) {
+        if (slot.hours.includes(hour)) {
+          const s = slotMap.get(slot.key);
+          s.passengers += count;
+          s.surveys += 1;
+          break;
+        }
+      }
     }
   }
 
@@ -85,6 +104,14 @@ export default async function handler(req, res) {
   const hours = Array.from(byHour.entries())
     .map(([h, v]) => ({ ...v, hour: h }))
     .sort((a, b) => a.hour - b.hour);
+  const byTimeSlot = Array.from(slotMap.values()).filter((s) => s.passengers > 0 || s.surveys > 0);
+
+  const peakMorning = slotMap.get('6-9');
+  const peakEvening = slotMap.get('17-19');
+  const peakHours = {
+    morning: peakMorning ? { label: '6–9 (incl. rush)', passengers: peakMorning.passengers, surveys: peakMorning.surveys } : null,
+    evening: peakEvening ? { label: '17–19 (rush)', passengers: peakEvening.passengers, surveys: peakEvening.surveys } : null,
+  };
 
   const avgPerSurvey = totalSurveys > 0 ? Math.round((totalPassengers / totalSurveys) * 10) / 10 : 0;
 
@@ -98,5 +125,7 @@ export default async function handler(req, res) {
     byStation: stations,
     byDate: dates,
     byHour: hours,
+    byTimeSlot,
+    peakHours,
   });
 }

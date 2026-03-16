@@ -5,6 +5,8 @@
     <!-- Start Survey -->
     <string name="station_name">Име на станица</string>
     <string name="surveyor_id">ID на анкетарот</string>
+    <string name="station_name_label">Име на станица: %s</string>
+    <string name="surveyor_id_label">ID на анкетарот: %s</string>
     <string name="start_survey">Започни анкета</string>
 
     <!-- Counting -->

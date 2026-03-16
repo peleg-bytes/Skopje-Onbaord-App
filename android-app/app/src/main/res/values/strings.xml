@@ -5,6 +5,8 @@
     <!-- Start Survey -->
     <string name="station_name">Station Name</string>
     <string name="surveyor_id">Surveyor ID</string>
+    <string name="station_name_label">Station name: %s</string>
+    <string name="surveyor_id_label">Surveyor ID: %s</string>
     <string name="start_survey">Start Survey</string>
 
     <!-- Counting -->

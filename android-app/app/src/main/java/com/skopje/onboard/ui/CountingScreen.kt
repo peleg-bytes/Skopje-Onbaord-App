@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -68,10 +69,17 @@ fun CountingScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .statusBarsPadding()
                     .padding(16.dp),
             ) {
-                Text(stationName, style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
-                Text(surveyorId, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+                Text(
+                    stringResource(R.string.station_name_label, stationName),
+                    style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    stringResource(R.string.surveyor_id_label, surveyorId),
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                )
                 Text(
                     when (gpsStatus) {
                         GpsStatus.ACQUIRING -> stringResource(R.string.gps_acquiring)
@@ -135,22 +143,26 @@ fun CountingScreen(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Button(
                     onClick = {
                         doVibrate()
                         onReset()
                     },
+                    modifier = Modifier.weight(1f).height(48.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.secondary),
                 ) {
-                    Text(stringResource(R.string.reset_counter))
+                    Text(stringResource(R.string.reset), maxLines = 1)
                 }
-                Button(onClick = {
-                    doVibrate()
-                    onSubmit()
-                }) {
-                    Text(stringResource(R.string.done_submit))
+                Button(
+                    onClick = {
+                        doVibrate()
+                        onSubmit()
+                    },
+                    modifier = Modifier.weight(1f).height(48.dp),
+                ) {
+                    Text(stringResource(R.string.submit), maxLines = 1)
                 }
             }
         }
