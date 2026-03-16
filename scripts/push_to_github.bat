@@ -30,17 +30,9 @@ if %ERRORLEVEL% neq 0 (
 echo.
 git remote show origin >nul 2>&1
 if %ERRORLEVEL% neq 0 (
-    echo No remote 'origin' configured.
-    echo.
-    set /p REPO_URL="Paste your GitHub repo URL (e.g. https://github.com/username/skopje-onboard-survey.git): "
-    if not "%REPO_URL%"=="" (
-        git remote add origin "%REPO_URL%"
-        echo Remote added.
-    ) else (
-        echo Skipped. Run: git remote add origin YOUR_REPO_URL
-        pause
-        exit /b 1
-    )
+    echo Adding remote origin: https://github.com/peleg-bytes/Skopje-Onbaord-App.git
+    git remote add origin https://github.com/peleg-bytes/Skopje-Onbaord-App.git
+    echo Remote added.
 )
 
 echo.
