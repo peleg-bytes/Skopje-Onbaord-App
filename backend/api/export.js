@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseClient, sanitizeSupabaseError } from '../lib/supabase.js';
 import ExcelJS from 'exceljs';
 
 export default async function handler(req, res) {
@@ -16,15 +16,12 @@ export default async function handler(req, res) {
 
   const { date, station } = req.query || {};
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
+  const supabaseResult = getSupabaseClient();
+  if (supabaseResult.error) {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    return res.status(500).json({ error: 'Server configuration error' });
+    return res.status(500).json({ error: supabaseResult.error });
   }
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = supabaseResult.client;
 
   let query = supabase.from('surveys').select('*').order('created_at', { ascending: true });
 
@@ -43,7 +40,7 @@ export default async function handler(req, res) {
   if (error) {
     console.error('Supabase query error:', error);
     res.setHeader('Access-Control-Allow-Origin', '*');
-    return res.status(500).json({ error: 'Failed to fetch surveys' });
+    return res.status(500).json({ error: 'Failed to fetch surveys: ' + sanitizeSupabaseError(error) });
   }
 
   const workbook = new ExcelJS.Workbook();
@@ -60,12 +57,13 @@ export default async function handler(req, res) {
     { header: 'PassengerCount', key: 'passengerCount', width: 14 },
   ];
 
+  const timeOnly = (v) => (v && v.includes(' ')) ? v.split(' ')[1] : (v || '');
   for (const r of rows || []) {
-    const dateStr = r.start_time ? r.start_time.split(' ')[0] : (r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : '');
+    const dateStr = r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : '';
     worksheet.addRow({
       date: dateStr,
-      startTime: r.start_time,
-      submitTime: r.submit_time,
+      startTime: timeOnly(r.start_time) || r.start_time || '',
+      submitTime: timeOnly(r.submit_time) || r.submit_time || '',
       surveyorId: r.surveyor_id,
       stationName: r.station_name,
       latitude: r.latitude ?? '',

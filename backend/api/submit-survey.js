@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseClient, sanitizeSupabaseError } from '../lib/supabase.js';
 
 export const config = {
   api: { bodyParser: true },
@@ -24,15 +24,12 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required fields: surveyorId, stationName, startTime, submitTime, passengerCount' });
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
+  const supabaseResult = getSupabaseClient();
+  if (supabaseResult.error) {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    return res.status(500).json({ error: 'Server configuration error' });
+    return res.status(500).json({ error: supabaseResult.error });
   }
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = supabaseResult.client;
 
   const { error } = await supabase.from('surveys').insert({
     surveyor_id: String(surveyorId),
@@ -48,9 +45,7 @@ export default async function handler(req, res) {
     console.error('Supabase insert error:', error);
     res.setHeader('Access-Control-Allow-Origin', '*');
     return res.status(500).json({
-      error: 'Failed to save survey',
-      details: error.message,
-      code: error.code,
+      error: 'Failed to save survey: ' + sanitizeSupabaseError(error),
     });
   }
 

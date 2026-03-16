@@ -105,7 +105,7 @@ class SurveyViewModel(application: Application) : AndroidViewModel(application) 
         if (s.stationName.isBlank() || s.surveyorId.isBlank()) return
 
         viewModelScope.launch {
-            val now = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+            val now = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
             val survey = Survey(
                 surveyorId = s.surveyorId,
                 stationName = s.stationName,
@@ -132,7 +132,7 @@ class SurveyViewModel(application: Application) : AndroidViewModel(application) 
         val s = _state.value.currentSurvey ?: return
         val newCount = (s.passengerCount + delta).coerceAtLeast(0)
         viewModelScope.launch {
-            val updated = s.copy(passengerCount = newCount, submitTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()))
+            val updated = s.copy(passengerCount = newCount, submitTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date()))
             dao.update(updated)
             _state.update { it.copy(passengerCount = newCount, currentSurvey = updated) }
         }
@@ -144,7 +144,7 @@ class SurveyViewModel(application: Application) : AndroidViewModel(application) 
     fun resetCounter() {
         viewModelScope.launch {
             val s = _state.value.currentSurvey ?: return@launch
-            val updated = s.copy(passengerCount = 0, submitTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()))
+            val updated = s.copy(passengerCount = 0, submitTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date()))
             dao.update(updated)
             _state.update { it.copy(passengerCount = 0, currentSurvey = updated, showResetDialog = false) }
         }
@@ -157,7 +157,7 @@ class SurveyViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             val s = _state.value.currentSurvey ?: return@launch
             val loc = locationHelper.getLocation()
-            val submitTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+            val submitTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
             val updated = s.copy(
                 submitTime = submitTime,
                 latitude = loc.lat,
@@ -180,10 +180,10 @@ class SurveyViewModel(application: Application) : AndroidViewModel(application) 
                 )
             }
             withContext(Dispatchers.Main) {
-                vibrateSubmitFeedback(getApplication(), feedback)
-                val msg = if (feedback == SubmitFeedback.SUCCESS) getApplication().getString(R.string.submit_success)
-                else getApplication().getString(R.string.submit_saved_offline)
-                Toast.makeText(getApplication(), msg, Toast.LENGTH_LONG).show()
+                val app = getApplication<Application>()
+                vibrateSubmitFeedback(app, feedback)
+                val msgResId = if (feedback == SubmitFeedback.SUCCESS) R.string.submit_success else R.string.submit_saved_offline
+                Toast.makeText(app, msgResId, Toast.LENGTH_LONG).show()
             }
             kotlinx.coroutines.delay(100)
             _state.update { it.copy(submitFeedback = null) }
@@ -203,7 +203,7 @@ class SurveyViewModel(application: Application) : AndroidViewModel(application) 
             vibrator.vibrate(VibrationEffect.createWaveform(pattern, amplitudes, -1))
         } else {
             @Suppress("DEPRECATION")
-            vibrator.vibrate(if (feedback == SubmitFeedback.SUCCESS) longArrayOf(0, 80, 80, 80) else longArrayOf(0, 100))
+            vibrator.vibrate(if (feedback == SubmitFeedback.SUCCESS) 80L else 100L)
         }
     }
 

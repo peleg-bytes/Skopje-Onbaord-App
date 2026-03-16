@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseClient, sanitizeSupabaseError } from '../lib/supabase.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
@@ -13,21 +13,18 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
+  const supabaseResult = getSupabaseClient();
+  if (supabaseResult.error) {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    return res.status(500).json({ error: 'Server configuration error' });
+    return res.status(500).json({ error: supabaseResult.error });
   }
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = supabaseResult.client;
 
   const { count, error: countError } = await supabase.from('surveys').select('*', { count: 'exact', head: true });
 
   if (countError) {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    return res.status(500).json({ error: 'Failed to fetch stats' });
+    return res.status(500).json({ error: 'Failed to fetch stats: ' + sanitizeSupabaseError(countError) });
   }
 
   const { data: recent } = await supabase

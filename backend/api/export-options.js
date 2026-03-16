@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseClient, sanitizeSupabaseError } from '../lib/supabase.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
@@ -13,15 +13,12 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
+  const supabaseResult = getSupabaseClient();
+  if (supabaseResult.error) {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    return res.status(500).json({ error: 'Server configuration error: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SECRET_KEY) must be set in Vercel.' });
+    return res.status(500).json({ error: supabaseResult.error });
   }
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = supabaseResult.client;
 
   const { data: rows, error } = await supabase
     .from('surveys')
@@ -31,7 +28,7 @@ export default async function handler(req, res) {
   if (error) {
     console.error('Export options Supabase error:', error);
     res.setHeader('Access-Control-Allow-Origin', '*');
-    return res.status(500).json({ error: 'Database error: ' + (error.message || 'Failed to fetch export options') });
+    return res.status(500).json({ error: 'Database error: ' + sanitizeSupabaseError(error) });
   }
 
   const dateSet = new Set();
@@ -39,7 +36,7 @@ export default async function handler(req, res) {
   const combos = new Map();
 
   for (const r of rows || []) {
-    const dateStr = r.start_time ? r.start_time.split(' ')[0] : (r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : null);
+    const dateStr = r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : null;
     const station = r.station_name || 'Unknown';
     if (dateStr) dateSet.add(dateStr);
     stationSet.add(station);
