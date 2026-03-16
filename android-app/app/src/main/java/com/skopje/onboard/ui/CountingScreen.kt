@@ -7,7 +7,6 @@ import android.os.VibratorManager
 import android.view.HapticFeedbackConstants
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -130,28 +130,35 @@ fun CountingScreen(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                CounterButton(label = "+5") {
-                    doVibrate()
-                    onAdd(5)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    CounterButton(label = "+5", isPositive = true, sizeLarge = false) {
+                        doVibrate()
+                        onAdd(5)
+                    }
+                    CounterButton(label = "-5", isPositive = false, sizeLarge = false, enabled = passengerCount >= 5) {
+                        doVibrate()
+                        onAdd(-5)
+                    }
                 }
-                CounterButton(label = "+1") {
-                    doVibrate()
-                    onAdd(1)
-                }
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-            ) {
-                CounterButton(label = "-1", enabled = passengerCount > 0) {
-                    doVibrate()
-                    onAdd(-1)
-                }
-                CounterButton(label = "-5", enabled = passengerCount >= 5) {
-                    doVibrate()
-                    onAdd(-5)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    CounterButton(label = "+1", isPositive = true, sizeLarge = true) {
+                        doVibrate()
+                        onAdd(1)
+                    }
+                    CounterButton(label = "-1", isPositive = false, sizeLarge = true, enabled = passengerCount > 0) {
+                        doVibrate()
+                        onAdd(-1)
+                    }
                 }
             }
 
@@ -188,16 +195,25 @@ fun CountingScreen(
 @Composable
 private fun CounterButton(
     label: String,
+    isPositive: Boolean,
+    sizeLarge: Boolean = false,
     enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
+    val containerColor = if (isPositive) Color(0xFF66BB6A) else Color(0xFFE57373)
+    val height = if (sizeLarge) 84.dp else 60.dp
+    val fontSize = if (sizeLarge) 28.sp else 20.sp
     Button(
         onClick = onClick,
         enabled = enabled,
         modifier = Modifier
-            .height(72.dp)
+            .height(height)
             .padding(8.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = containerColor,
+            disabledContainerColor = containerColor.copy(alpha = 0.4f),
+        ),
     ) {
-        Text(label, fontSize = 24.sp)
+        Text(label, fontSize = fontSize)
     }
 }
