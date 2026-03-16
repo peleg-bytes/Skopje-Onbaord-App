@@ -5,73 +5,431 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Skopje Onboard Survey - Admin</title>
   <style>
-    * { box-sizing: border-box; }
-    body { font-family: system-ui, sans-serif; max-width: 500px; margin: 2rem auto; padding: 1rem; }
-    h1 { font-size: 1.5rem; margin-bottom: 1rem; }
-    .stat { background: #f0f0f0; padding: 0.5rem 1rem; border-radius: 6px; margin-bottom: 1rem; }
-    label { display: block; margin-top: 0.75rem; font-weight: 500; }
-    input, select { width: 100%; padding: 0.5rem; margin-top: 0.25rem; font-size: 1rem; }
-    button { margin-top: 1rem; padding: 0.6rem 1.2rem; font-size: 1rem; cursor: pointer; background: #2563eb; color: white; border: none; border-radius: 6px; }
-    button:hover { background: #1d4ed8; }
-    button:disabled { background: #94a3b8; cursor: not-allowed; }
-    .error { color: #dc2626; margin-top: 0.5rem; }
-    .success { color: #16a34a; margin-top: 0.5rem; }
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface-hover: #334155;
+      --border: #475569;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #22c55e;
+      --error: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    .container { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 0;
+      margin-bottom: 1.5rem;
+    }
+    header h1 { font-size: 1.5rem; font-weight: 600; }
+    header p { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .stat-card .label { color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-card .value { font-size: 1.75rem; font-weight: 700; margin-top: 0.25rem; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .section-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .section-header h2 { font-size: 1.1rem; font-weight: 600; }
+    .section-body { padding: 1rem 1.25rem; }
+
+    .filters {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .filter-group label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; }
+    .filter-group input, .filter-group select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    .filter-group input:focus, .filter-group select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary { background: var(--surface-hover); color: var(--text); }
+    .btn-secondary:hover { background: var(--border); }
+    .btn-sm { padding: 0.35rem 0.65rem; font-size: 0.8rem; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .export-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 0.75rem;
+    }
+    .export-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .export-card:hover { border-color: var(--accent); }
+    .export-card .info { flex: 1; min-width: 0; }
+    .export-card .filename { font-weight: 500; font-size: 0.9rem; }
+    .export-card .meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    th, td {
+      padding: 0.6rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background: var(--bg);
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    tr:hover td { background: rgba(59, 130, 246, 0.05); }
+    .table-wrap { overflow-x: auto; }
+
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-muted);
+    }
+    .empty-state svg { width: 48px; height: 48px; margin-bottom: 0.75rem; opacity: 0.5; }
+
+    .message { padding: 0.75rem; border-radius: 6px; margin-top: 0.75rem; }
+    .message.success { background: rgba(34, 197, 94, 0.15); color: var(--success); }
+    .message.error { background: rgba(239, 68, 68, 0.15); color: var(--error); }
+
+    .loading { opacity: 0.7; pointer-events: none; }
+    .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); }
+    .tab {
+      padding: 0.75rem 1.25rem;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
   </style>
 </head>
 <body>
-  <h1>Skopje Onboard Survey</h1>
-  <p>Download survey results as Excel. Surveyors submit from the Android app in Skopje.</p>
+  <header>
+    <div class="container">
+      <h1>Skopje Onboard Survey</h1>
+      <p>Admin dashboard — view and download survey results from Skopje field surveyors</p>
+    </div>
+  </header>
 
-  <div class="stat" id="stats">Loading stats...</div>
+  <div class="container">
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card">
+        <div class="label">Total Surveys</div>
+        <div class="value" id="totalSurveys">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Stations</div>
+        <div class="value" id="totalStations">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Export Options</div>
+        <div class="value" id="totalExports">—</div>
+      </div>
+    </div>
 
-  <form id="exportForm">
-    <label for="date">Date (optional)</label>
-    <input type="date" id="date" name="date">
+    <div class="section">
+      <div class="tabs">
+        <button class="tab active" data-tab="exports">Excel Exports</button>
+        <button class="tab" data-tab="surveys">All Surveys</button>
+        <button class="tab" data-tab="custom">Custom Export</button>
+      </div>
 
-    <label for="station">Station name (optional)</label>
-    <input type="text" id="station" name="station" placeholder="e.g. Central Station">
+      <div id="tab-exports" class="tab-content active">
+        <div class="section-header">
+          <h2>Available Excel Files</h2>
+          <button class="btn btn-secondary btn-sm" id="refreshExports">Refresh</button>
+        </div>
+        <div class="section-body">
+          <div id="exportList" class="export-grid">
+            <div class="empty-state">Loading...</div>
+          </div>
+        </div>
+      </div>
 
-    <button type="submit" id="btn">Generate & Download Excel</button>
-  </form>
+      <div id="tab-surveys" class="tab-content">
+        <div class="section-header">
+          <h2>Survey Records</h2>
+          <div class="filters">
+            <div class="filter-group">
+              <label>Date</label>
+              <input type="date" id="filterDate">
+            </div>
+            <div class="filter-group">
+              <label>Station</label>
+              <input type="text" id="filterStation" placeholder="Filter by station">
+            </div>
+            <button class="btn btn-primary btn-sm" id="loadSurveys">Load</button>
+          </div>
+        </div>
+        <div class="section-body">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Start</th>
+                  <th>Submit</th>
+                  <th>Surveyor</th>
+                  <th>Station</th>
+                  <th>Lat</th>
+                  <th>Lng</th>
+                  <th>Count</th>
+                </tr>
+              </thead>
+              <tbody id="surveysTable">
+                <tr><td colspan="8" class="empty-state">Click Load to fetch surveys</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
-  <div id="message"></div>
+      <div id="tab-custom" class="tab-content">
+        <div class="section-header">
+          <h2>Generate Custom Excel</h2>
+        </div>
+        <div class="section-body">
+          <form id="exportForm" class="filters" style="margin-bottom: 1rem;">
+            <div class="filter-group">
+              <label>Date (optional)</label>
+              <input type="date" id="customDate" name="date">
+            </div>
+            <div class="filter-group">
+              <label>Station (optional)</label>
+              <input type="text" id="customStation" name="station" placeholder="e.g. Central Station">
+            </div>
+            <button type="submit" class="btn btn-primary" id="exportBtn">Generate & Download Excel</button>
+          </form>
+          <div id="exportMessage"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
     const base = window.location.origin;
 
+    function showMessage(el, text, type) {
+      el.textContent = text;
+      el.className = 'message ' + (type || '');
+      el.style.display = text ? 'block' : 'none';
+    }
+
     async function loadStats() {
       try {
-        const r = await fetch(base + '/api/stats');
-        const d = await r.json();
-        document.getElementById('stats').textContent = 'Total surveys: ' + (d.totalSurveys || 0) + (d.recentStations?.length ? ' | Recent stations: ' + d.recentStations.join(', ') : '');
+        const [statsRes, optionsRes] = await Promise.all([
+          fetch(base + '/api/stats'),
+          fetch(base + '/api/export-options')
+        ]);
+        const stats = await statsRes.json();
+        const options = await optionsRes.json();
+
+        document.getElementById('totalSurveys').textContent = stats.totalSurveys ?? 0;
+        document.getElementById('totalStations').textContent = (options.stations || []).length;
+        document.getElementById('totalExports').textContent = (options.exportOptions || []).length;
       } catch (e) {
-        document.getElementById('stats').textContent = 'Could not load stats.';
+        document.getElementById('totalSurveys').textContent = '—';
       }
     }
 
-    loadStats();
+    async function loadExportOptions() {
+      const list = document.getElementById('exportList');
+      list.innerHTML = '<div class="empty-state">Loading...</div>';
+      try {
+        const r = await fetch(base + '/api/export-options');
+        const d = await r.json();
+        const options = d.exportOptions || [];
+        if (options.length === 0) {
+          list.innerHTML = '<div class="empty-state">No survey data yet. Surveys will appear here once submitted from the app.</div>';
+          return;
+        }
+        list.innerHTML = options.map(o => {
+          const filename = `${o.date}_${(o.station || 'all').replace(/\s+/g, '_').substring(0, 25)}.xlsx`;
+          const params = `date=${encodeURIComponent(o.date)}&station=${encodeURIComponent(o.station)}`;
+          return `
+            <div class="export-card">
+              <div class="info">
+                <div class="filename">${escapeHtml(filename)}</div>
+                <div class="meta">${o.count} survey(s) · ${o.date} · ${escapeHtml(o.station)}</div>
+              </div>
+              <button class="btn btn-primary btn-sm export-download" data-params="${escapeHtml(params)}" data-filename="${escapeHtml(filename)}">Download</button>
+            </div>
+          `;
+        }).join('');
+        list.querySelectorAll('.export-download').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            btn.disabled = true;
+            try {
+              const r = await fetch(base + '/api/export?' + btn.dataset.params);
+              if (!r.ok) throw new Error('Download failed');
+              const blob = await r.blob();
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(blob);
+              a.download = btn.dataset.filename;
+              a.click();
+              URL.revokeObjectURL(a.href);
+            } finally {
+              btn.disabled = false;
+            }
+          });
+        });
+      } catch (e) {
+        list.innerHTML = '<div class="empty-state">Failed to load export options.</div>';
+      }
+      loadStats();
+    }
 
-    document.getElementById('exportForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const date = document.getElementById('date').value;
-      const station = document.getElementById('station').value.trim();
-      const btn = document.getElementById('btn');
-      const msg = document.getElementById('message');
-
-      btn.disabled = true;
-      msg.textContent = '';
-      msg.className = '';
-
+    async function loadSurveys() {
+      const tbody = document.getElementById('surveysTable');
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Loading...</td></tr>';
+      const date = document.getElementById('filterDate').value;
+      const station = document.getElementById('filterStation').value.trim();
       const params = new URLSearchParams();
       if (date) params.set('date', date);
       if (station) params.set('station', station);
-
+      params.set('limit', '200');
       try {
-        const r = await fetch(base + '/api/export?' + params.toString());
-        if (!r.ok) {
-          const err = await r.json().catch(() => ({}));
-          throw new Error(err.error || 'Export failed');
+        const r = await fetch(base + '/api/surveys?' + params);
+        const d = await r.json();
+        const surveys = d.surveys || [];
+        if (surveys.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No surveys found.</td></tr>';
+          return;
         }
+        tbody.innerHTML = surveys.map(s => {
+          const dateStr = s.start_time ? s.start_time.split(' ')[0] : (s.created_at ? new Date(s.created_at).toISOString().split('T')[0] : '—');
+          const startT = s.start_time ? s.start_time.split(' ')[1] : '—';
+          const submitT = s.submit_time ? s.submit_time.split(' ')[1] : '—';
+          return `
+            <tr>
+              <td>${dateStr}</td>
+              <td>${startT}</td>
+              <td>${submitT}</td>
+              <td>${escapeHtml(s.surveyor_id)}</td>
+              <td>${escapeHtml(s.station_name)}</td>
+              <td>${s.latitude ?? '—'}</td>
+              <td>${s.longitude ?? '—'}</td>
+              <td>${s.passenger_count}</td>
+            </tr>
+          `;
+        }).join('');
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Failed to load surveys.</td></tr>';
+      }
+    }
+
+    function escapeHtml(s) {
+      if (s == null) return '—';
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    document.getElementById('refreshExports').addEventListener('click', () => {
+      loadExportOptions();
+    });
+
+    document.getElementById('loadSurveys').addEventListener('click', loadSurveys);
+
+    document.getElementById('exportForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('exportBtn');
+      const msg = document.getElementById('exportMessage');
+      const date = document.getElementById('customDate').value;
+      const station = document.getElementById('customStation').value.trim();
+      btn.disabled = true;
+      showMessage(msg, '');
+      const params = new URLSearchParams();
+      if (date) params.set('date', date);
+      if (station) params.set('station', station);
+      try {
+        const r = await fetch(base + '/api/export?' + params);
+        if (!r.ok) throw new Error('Export failed');
         const blob = await r.blob();
         const cd = r.headers.get('Content-Disposition');
         let filename = 'surveys.xlsx';
@@ -84,15 +442,16 @@
         a.download = filename;
         a.click();
         URL.revokeObjectURL(a.href);
-        msg.textContent = 'Download started.';
-        msg.className = 'success';
+        showMessage(msg, 'Download started.', 'success');
       } catch (err) {
-        msg.textContent = err.message || 'Export failed.';
-        msg.className = 'error';
+        showMessage(msg, err.message || 'Export failed.', 'error');
       } finally {
         btn.disabled = false;
       }
     });
+
+    loadStats();
+    loadExportOptions();
   </script>
 </body>
 </html>
