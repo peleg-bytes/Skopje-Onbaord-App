@@ -46,6 +46,10 @@
     <string name="submit_success">Успешно поднесено</string>
     <string name="submit_saved_offline">Зачувано. Ќе се синхронизира кога ќе биде онлајн.</string>
 
+    <!-- Exit survey -->
+    <string name="exit_survey">Излез</string>
+    <string name="exit_survey_confirm">Излези без поднесување? Оваа анкета ќе биде отфрлена и нема да се зачува.</string>
+
     <!-- Misc -->
     <string name="back">Назад</string>
 </resources>

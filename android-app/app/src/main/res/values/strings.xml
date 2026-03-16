@@ -46,6 +46,10 @@
     <string name="submit_success">Submitted successfully</string>
     <string name="submit_saved_offline">Saved. Will sync when online.</string>
 
+    <!-- Exit survey -->
+    <string name="exit_survey">Exit</string>
+    <string name="exit_survey_confirm">Exit without submitting? This survey will be discarded and not saved.</string>
+
     <!-- Misc -->
     <string name="back">Back</string>
 </resources>

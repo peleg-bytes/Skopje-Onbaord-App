@@ -7,6 +7,7 @@ import android.os.VibratorManager
 import android.view.HapticFeedbackConstants
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -42,6 +44,7 @@ fun CountingScreen(
     onAdd: (Int) -> Unit,
     onReset: () -> Unit,
     onSubmit: () -> Unit,
+    onExit: () -> Unit,
 ) {
     val view = LocalView.current
     val context = LocalContext.current
@@ -66,32 +69,45 @@ fun CountingScreen(
 
     Scaffold(
         topBar = {
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
                     .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
             ) {
-                Text(
-                    stringResource(R.string.station_name_label, stationName),
-                    style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    stringResource(R.string.surveyor_id_label, surveyorId),
-                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                )
-                Text(
-                    when (gpsStatus) {
-                        GpsStatus.ACQUIRING -> stringResource(R.string.gps_acquiring)
-                        GpsStatus.LOCKED -> stringResource(R.string.gps_locked)
-                        GpsStatus.UNAVAILABLE -> stringResource(R.string.gps_unavailable)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        stringResource(R.string.station_name_label, stationName),
+                        style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        stringResource(R.string.surveyor_id_label, surveyorId),
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    )
+                    Text(
+                        when (gpsStatus) {
+                            GpsStatus.ACQUIRING -> stringResource(R.string.gps_acquiring)
+                            GpsStatus.LOCKED -> stringResource(R.string.gps_locked)
+                            GpsStatus.UNAVAILABLE -> stringResource(R.string.gps_unavailable)
+                        },
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    )
+                    Text(
+                        if (serverOnline) stringResource(R.string.server_online) else stringResource(R.string.server_offline),
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    )
+                }
+                TextButton(
+                    onClick = {
+                        doVibrate()
+                        onExit()
                     },
-                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                )
-                Text(
-                    if (serverOnline) stringResource(R.string.server_online) else stringResource(R.string.server_offline),
-                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                )
+                    colors = ButtonDefaults.textButtonColors(contentColor = androidx.compose.material3.MaterialTheme.colorScheme.error),
+                ) {
+                    Text(stringResource(R.string.exit_survey))
+                }
             }
         }
     ) { padding ->

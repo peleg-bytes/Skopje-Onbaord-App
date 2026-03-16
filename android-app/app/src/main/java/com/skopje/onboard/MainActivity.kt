@@ -6,6 +6,7 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.view.WindowCompat
 import com.skopje.onboard.ui.CountingScreen
+import com.skopje.onboard.ui.ExitSurveyConfirmDialog
 import com.skopje.onboard.ui.ResetConfirmDialog
 import com.skopje.onboard.ui.ResumeDialog
 import com.skopje.onboard.ui.SettingsScreen
@@ -84,6 +86,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            BackHandler(enabled = state.screen == Screen.Counting) {
+                viewModel.requestExitSurvey()
+            }
+
             MaterialTheme(colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme()) {
                 when (state.screen) {
                     Screen.Start -> StartSurveyScreen(
@@ -103,6 +109,7 @@ class MainActivity : ComponentActivity() {
                         onAdd = viewModel::addCount,
                         onReset = viewModel::requestReset,
                         onSubmit = viewModel::requestSubmit,
+                        onExit = viewModel::requestExitSurvey,
                     )
                     Screen.Settings -> SettingsScreen(
                         language = language,
@@ -129,6 +136,12 @@ class MainActivity : ComponentActivity() {
                     SubmitConfirmDialog(
                         onConfirm = viewModel::submitSurvey,
                         onDismiss = viewModel::dismissSubmitDialog,
+                    )
+                }
+                if (state.showExitDialog) {
+                    ExitSurveyConfirmDialog(
+                        onConfirm = viewModel::confirmExitSurvey,
+                        onDismiss = viewModel::dismissExitDialog,
                     )
                 }
             }

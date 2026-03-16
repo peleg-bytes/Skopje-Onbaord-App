@@ -50,3 +50,25 @@ fun SubmitConfirmDialog(
         },
     )
 }
+
+@Composable
+fun ExitSurveyConfirmDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.exit_survey)) },
+        text = { Text(stringResource(R.string.exit_survey_confirm)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(stringResource(R.string.exit_survey), color = androidx.compose.material3.MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        },
+    )
+}

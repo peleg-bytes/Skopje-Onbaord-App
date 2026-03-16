@@ -40,6 +40,7 @@ data class SurveyUiState(
     val showResumeDialog: Boolean = false,
     val showResetDialog: Boolean = false,
     val showSubmitDialog: Boolean = false,
+    val showExitDialog: Boolean = false,
     val submitFeedback: SubmitFeedback? = null,
 )
 
@@ -152,6 +153,17 @@ class SurveyViewModel(application: Application) : AndroidViewModel(application) 
 
     fun requestSubmit() { _state.update { it.copy(showSubmitDialog = true) } }
     fun dismissSubmitDialog() { _state.update { it.copy(showSubmitDialog = false) } }
+    fun requestExitSurvey() { _state.update { it.copy(showExitDialog = true) } }
+    fun dismissExitDialog() { _state.update { it.copy(showExitDialog = false) } }
+    fun confirmExitSurvey() {
+        viewModelScope.launch {
+            val s = _state.value.currentSurvey
+            if (s != null) dao.delete(s.id)
+            _state.update {
+                it.copy(showExitDialog = false, screen = Screen.Start, currentSurvey = null, passengerCount = 0)
+            }
+        }
+    }
 
     fun submitSurvey() {
         viewModelScope.launch {

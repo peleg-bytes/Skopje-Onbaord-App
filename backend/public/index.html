@@ -121,12 +121,13 @@
       border-radius: 6px;
       padding: 1rem;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
+      align-items: stretch;
       gap: 0.75rem;
     }
     .export-card:hover { border-color: var(--accent); }
     .export-card .info { flex: 1; min-width: 0; }
+    .export-card .btn-group { margin-top: 0.5rem; }
     .export-card .filename { font-weight: 500; font-size: 0.9rem; }
     .export-card .meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
 
@@ -207,6 +208,14 @@
     .peak-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
     .peak-card .label { font-size: 0.75rem; color: var(--text-muted); }
     .peak-card .value { font-size: 1.25rem; font-weight: 600; }
+    .insight-box { background: var(--bg); border-left: 4px solid var(--accent); padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 0 6px 6px 0; }
+    .insight-box p { margin: 0.25rem 0; font-size: 0.9rem; }
+    .insight-box strong { color: var(--accent); }
+    .analysis-note { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; }
+    .details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; }
+    .details-table { font-size: 0.85rem; }
+    .details-table th, .details-table td { padding: 0.4rem 0.6rem; }
+    .pct { color: var(--text-muted); font-size: 0.8em; }
   </style>
 </head>
 <body>
@@ -549,86 +558,96 @@
         const r = await fetch(base + '/api/analysis?' + params);
         const d = await r.json();
         if (d.error) throw new Error(d.error);
-        const { summary, byStation, byDate, byHour, byTimeSlot, peakHours } = d;
-        const maxHour = byHour?.length ? Math.max(...byHour.map(h => h.passengers)) : 1;
+        const { summary, byStation, byDate, byTimeSlot } = d;
+        const total = summary.totalPassengers || 1;
         const rangeLabel = (dateFrom && dateTo) ? `${dateFrom} to ${dateTo}` : (dateFrom || dateTo) ? (dateFrom || dateTo) : 'All results';
 
-        const peakCardsHtml = [peakHours?.morning, peakHours?.evening].filter(Boolean).map(p => `
-          <div class="peak-card">
-            <div class="label">${escapeHtml(p.label)}</div>
-            <div class="value">${p.passengers} passengers</div>
-            <div class="label">${p.surveys} surveys</div>
-          </div>
-        `).join('');
+        if (summary.totalSurveys === 0) {
+          el.innerHTML = '<div class="empty-state">No survey data in this range. Submit surveys from the app to see analysis.</div>';
+          return;
+        }
+
+        const topStation = byStation?.[0];
+        const topSlot = byTimeSlot?.length ? byTimeSlot.reduce((a, b) => (a.passengers > b.passengers ? a : b)) : null;
+        const insightLines = [];
+        if (topStation) insightLines.push(`<strong>Busiest station:</strong> ${escapeHtml(topStation.station)} — ${topStation.passengers} passengers (${Math.round((topStation.passengers / total) * 100)}%)`);
+        if (topSlot) insightLines.push(`<strong>Peak period:</strong> ${escapeHtml(topSlot.label)} — ${topSlot.passengers} passengers (${Math.round((topSlot.passengers / total) * 100)}%)`);
+
+        const stationTableRows = (byStation || []).map(s => {
+          const pct = Math.round((s.passengers / total) * 100);
+          return `<tr><td>${escapeHtml(s.station)}</td><td>${s.passengers}</td><td class="pct">${pct}%</td></tr>`;
+        }).join('');
+        const slotTableRows = (byTimeSlot || []).map(s => {
+          const pct = Math.round((s.passengers / total) * 100);
+          return `<tr><td>${escapeHtml(s.label)}</td><td>${s.passengers}</td><td class="pct">${pct}%</td></tr>`;
+        }).join('');
+        const dateTableRows = (byDate || []).map(s => {
+          const pct = Math.round((s.passengers / total) * 100);
+          return `<tr><td>${s.date}</td><td>${s.passengers}</td><td class="pct">${pct}%</td></tr>`;
+        }).join('');
 
         el.innerHTML = `
           <p class="analysis-range" style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem;">Showing: ${rangeLabel}</p>
           <div class="analysis-grid">
             <div class="stat-card">
-              <div class="label">Total Surveys</div>
-              <div class="value">${summary.totalSurveys}</div>
-            </div>
-            <div class="stat-card">
               <div class="label">Total Passengers</div>
               <div class="value">${summary.totalPassengers}</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Surveys</div>
+              <div class="value">${summary.totalSurveys}</div>
             </div>
             <div class="stat-card">
               <div class="label">Avg per Survey</div>
               <div class="value">${summary.avgPassengersPerSurvey}</div>
             </div>
           </div>
-          ${peakCardsHtml ? `<div class="analysis-section"><h3>Peak Hours (UTC)</h3><div class="peak-cards">${peakCardsHtml}</div></div>` : ''}
+          ${insightLines.length ? `<div class="insight-box"><p>${insightLines.join('</p><p>')}</p></div>` : ''}
           <div class="analysis-section">
-            <h3>Time-based Analysis</h3>
+            <h3>Overview</h3>
             <div class="chart-row">
-              <div><div class="chart-container"><canvas id="chartTimeSlot"></canvas></div><p style="font-size:0.8rem;color:var(--text-muted);">Passengers by time of day</p></div>
-              <div><div class="chart-container"><canvas id="chartStation"></canvas></div><p style="font-size:0.8rem;color:var(--text-muted);">Passengers by station</p></div>
+              <div>
+                <div class="chart-container"><canvas id="chartStation"></canvas></div>
+                <p class="analysis-note">Passengers by station — bar chart for easy comparison</p>
+              </div>
+              <div>
+                <div class="chart-container"><canvas id="chartTimeSlot"></canvas></div>
+                <p class="analysis-note">Passengers by time of day (UTC; Skopje ≈ UTC+1)</p>
+              </div>
             </div>
           </div>
           <div class="analysis-section">
-            <h3>Passengers by Time Slot (UTC)</h3>
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>Time Slot</th><th>Surveys</th><th>Passengers</th></tr></thead>
-                <tbody>${(byTimeSlot || []).map(s => `
-                  <tr><td>${escapeHtml(s.label)}</td><td>${s.surveys}</td><td>${s.passengers}</td></tr>
-                `).join('')}</tbody>
-              </table>
+            <h3>Details</h3>
+            <div class="details-grid">
+              <div>
+                <h4 style="font-size:0.9rem;margin-bottom:0.5rem;">By station</h4>
+                <div class="table-wrap"><table class="details-table"><thead><tr><th>Station</th><th>Passengers</th><th></th></tr></thead><tbody>${stationTableRows}</tbody></table></div>
+              </div>
+              <div>
+                <h4 style="font-size:0.9rem;margin-bottom:0.5rem;">By time slot</h4>
+                <div class="table-wrap"><table class="details-table"><thead><tr><th>Time</th><th>Passengers</th><th></th></tr></thead><tbody>${slotTableRows}</tbody></table></div>
+              </div>
+              <div>
+                <h4 style="font-size:0.9rem;margin-bottom:0.5rem;">By date</h4>
+                <div class="table-wrap"><table class="details-table"><thead><tr><th>Date</th><th>Passengers</th><th></th></tr></thead><tbody>${dateTableRows}</tbody></table></div>
+              </div>
             </div>
-          </div>
-          <div class="analysis-section">
-            <h3>Passengers by Station</h3>
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>Station</th><th>Surveys</th><th>Passengers</th></tr></thead>
-                <tbody>${(byStation || []).map(s => `
-                  <tr><td>${escapeHtml(s.station)}</td><td>${s.surveys}</td><td>${s.passengers}</td></tr>
-                `).join('')}</tbody>
-              </table>
-            </div>
-          </div>
-          <div class="analysis-section">
-            <h3>Passengers by Date</h3>
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>Date</th><th>Surveys</th><th>Passengers</th></tr></thead>
-                <tbody>${(byDate || []).map(s => `
-                  <tr><td>${s.date}</td><td>${s.surveys}</td><td>${s.passengers}</td></tr>
-                `).join('')}</tbody>
-              </table>
-            </div>
-          </div>
-          <div class="analysis-section">
-            <h3>Passengers by Hour (UTC)</h3>
-            <div class="bar-chart">${(byHour || []).map(h => `
-              <div class="bar" style="height: ${maxHour > 0 ? (h.passengers / maxHour) * 100 : 0}%;" title="${h.hour}:00 - ${h.passengers} passengers"></div>
-            `).join('')}</div>
-            <div class="bar-labels">${(byHour || []).map(h => `<span>${h.hour}h</span>`).join('')}</div>
           </div>
         `;
 
         if (typeof Chart !== 'undefined') {
           const opts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } } };
+          if (byStation?.length) {
+            const ctx = document.getElementById('chartStation');
+            if (ctx) analysisCharts.push(new Chart(ctx, {
+              type: 'bar',
+              data: {
+                labels: byStation.map(s => s.station.length > 20 ? s.station.substring(0, 20) + '…' : s.station),
+                datasets: [{ label: 'Passengers', data: byStation.map(s => s.passengers), backgroundColor: CHART_COLORS[0] }]
+              },
+              options: { ...opts, indexAxis: 'y', scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } }
+            }));
+          }
           if (byTimeSlot?.length) {
             const ctx = document.getElementById('chartTimeSlot');
             if (ctx) analysisCharts.push(new Chart(ctx, {
@@ -636,17 +655,6 @@
               data: {
                 labels: byTimeSlot.map(s => s.label),
                 datasets: [{ data: byTimeSlot.map(s => s.passengers), backgroundColor: CHART_COLORS }]
-              },
-              options: opts
-            }));
-          }
-          if (byStation?.length) {
-            const ctx = document.getElementById('chartStation');
-            if (ctx) analysisCharts.push(new Chart(ctx, {
-              type: 'pie',
-              data: {
-                labels: byStation.map(s => s.station.length > 18 ? s.station.substring(0, 18) + '…' : s.station),
-                datasets: [{ data: byStation.map(s => s.passengers), backgroundColor: CHART_COLORS }]
               },
               options: opts
             }));
