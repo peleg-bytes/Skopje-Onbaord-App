@@ -1,0 +1,10 @@
+{
+  "name": "skopje-onboard-survey-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Skopje Onboard Survey - Vercel serverless",
+  "type": "module",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "exceljs": "^4.4.0"
+  }
+}

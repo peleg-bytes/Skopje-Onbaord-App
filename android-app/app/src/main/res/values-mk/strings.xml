@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Анкета за качување - Скопје</string>
+
+    <!-- Start Survey -->
+    <string name="station_name">Име на станица</string>
+    <string name="surveyor_id">ID на анкетарот</string>
+    <string name="start_survey">Започни анкета</string>
+
+    <!-- Counting -->
+    <string name="count">БРОЈ</string>
+    <string name="reset_counter">Ресетирај бројач</string>
+    <string name="done_submit">Готово / Поднеси</string>
+    <string name="reset_confirm">Ресетирај бројач на 0?</string>
+    <string name="submit_confirm">Поднеси ја оваа анкета?</string>
+    <string name="cancel">Откажи</string>
+    <string name="submit">Поднеси</string>
+    <string name="reset">Ресетирај</string>
+
+    <!-- GPS -->
+    <string name="gps_acquiring">GPS: се добива</string>
+    <string name="gps_locked">GPS: заклучено</string>
+    <string name="gps_unavailable">GPS: недостапно</string>
+
+    <!-- Server -->
+    <string name="server_online">Сервер: Онлајн</string>
+    <string name="server_offline">Сервер: Офлајн (синхронизирај подоцна)</string>
+
+    <!-- Resume -->
+    <string name="resume_previous">Продолжи со претходна анкета?</string>
+    <string name="resume">Продолжи</string>
+    <string name="discard">Отфрли</string>
+
+    <!-- Settings -->
+    <string name="settings">Поставки</string>
+    <string name="language">Јазик</string>
+    <string name="theme">Тема</string>
+    <string name="light_mode">Светла тема</string>
+    <string name="dark_mode">Темна тема</string>
+    <string name="api_url">API URL (Сервер)</string>
+    <string name="api_url_hint">https://your-app.vercel.app</string>
+
+    <!-- Misc -->
+    <string name="back">Назад</string>
+</resources>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skopje Onboard Survey - Admin</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; max-width: 500px; margin: 2rem auto; padding: 1rem; }
+    h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+    .stat { background: #f0f0f0; padding: 0.5rem 1rem; border-radius: 6px; margin-bottom: 1rem; }
+    label { display: block; margin-top: 0.75rem; font-weight: 500; }
+    input, select { width: 100%; padding: 0.5rem; margin-top: 0.25rem; font-size: 1rem; }
+    button { margin-top: 1rem; padding: 0.6rem 1.2rem; font-size: 1rem; cursor: pointer; background: #2563eb; color: white; border: none; border-radius: 6px; }
+    button:hover { background: #1d4ed8; }
+    button:disabled { background: #94a3b8; cursor: not-allowed; }
+    .error { color: #dc2626; margin-top: 0.5rem; }
+    .success { color: #16a34a; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <h1>Skopje Onboard Survey</h1>
+  <p>Download survey results as Excel. Surveyors submit from the Android app in Skopje.</p>
+
+  <div class="stat" id="stats">Loading stats...</div>
+
+  <form id="exportForm">
+    <label for="date">Date (optional)</label>
+    <input type="date" id="date" name="date">
+
+    <label for="station">Station name (optional)</label>
+    <input type="text" id="station" name="station" placeholder="e.g. Central Station">
+
+    <button type="submit" id="btn">Generate & Download Excel</button>
+  </form>
+
+  <div id="message"></div>
+
+  <script>
+    const base = window.location.origin;
+
+    async function loadStats() {
+      try {
+        const r = await fetch(base + '/api/stats');
+        const d = await r.json();
+        document.getElementById('stats').textContent = 'Total surveys: ' + (d.totalSurveys || 0) + (d.recentStations?.length ? ' | Recent stations: ' + d.recentStations.join(', ') : '');
+      } catch (e) {
+        document.getElementById('stats').textContent = 'Could not load stats.';
+      }
+    }
+
+    loadStats();
+
+    document.getElementById('exportForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const date = document.getElementById('date').value;
+      const station = document.getElementById('station').value.trim();
+      const btn = document.getElementById('btn');
+      const msg = document.getElementById('message');
+
+      btn.disabled = true;
+      msg.textContent = '';
+      msg.className = '';
+
+      const params = new URLSearchParams();
+      if (date) params.set('date', date);
+      if (station) params.set('station', station);
+
+      try {
+        const r = await fetch(base + '/api/export?' + params.toString());
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}));
+          throw new Error(err.error || 'Export failed');
+        }
+        const blob = await r.blob();
+        const cd = r.headers.get('Content-Disposition');
+        let filename = 'surveys.xlsx';
+        if (cd) {
+          const m = cd.match(/filename="([^"]+)"/);
+          if (m) filename = m[1];
+        }
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        msg.textContent = 'Download started.';
+        msg.className = 'success';
+      } catch (err) {
+        msg.textContent = err.message || 'Export failed.';
+        msg.className = 'error';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

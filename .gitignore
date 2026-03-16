@@ -1,0 +1,22 @@
+# Android
+android-app/local.properties
+android-app/.gradle/
+android-app/build/
+android-app/app/build/
+android-app/captures/
+*.apk
+*.ap_
+*.aab
+
+# Node / Backend
+backend/node_modules/
+backend/.vercel/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
