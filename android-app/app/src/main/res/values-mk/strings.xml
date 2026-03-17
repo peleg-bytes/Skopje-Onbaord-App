@@ -17,6 +17,7 @@
     <string name="submit_confirm">Поднеси ја оваа анкета?</string>
     <string name="cancel">Откажи</string>
     <string name="submit">Поднеси</string>
+    <string name="submitting">Се поднесува…</string>
     <string name="reset">Ресетирај</string>
 
     <!-- GPS -->

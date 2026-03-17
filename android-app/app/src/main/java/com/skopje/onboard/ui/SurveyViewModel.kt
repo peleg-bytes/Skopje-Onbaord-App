@@ -42,6 +42,7 @@ data class SurveyUiState(
     val showSubmitDialog: Boolean = false,
     val showExitDialog: Boolean = false,
     val submitFeedback: SubmitFeedback? = null,
+    val isSubmitting: Boolean = false,
 )
 
 enum class SubmitFeedback { SUCCESS, SAVED_OFFLINE }
@@ -166,39 +167,45 @@ class SurveyViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun submitSurvey() {
+        if (_state.value.isSubmitting) return
         viewModelScope.launch {
-            val s = _state.value.currentSurvey ?: return@launch
-            val loc = locationHelper.getLocation()
-            val submitTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-            val updated = s.copy(
-                submitTime = submitTime,
-                latitude = loc.lat,
-                longitude = loc.lng,
-                isSubmitted = true,
-            )
-            dao.update(updated)
-            val result = SyncHelper.syncNow(getApplication())
-            androidx.work.WorkManager.getInstance(getApplication()).enqueue(
-                androidx.work.OneTimeWorkRequestBuilder<com.skopje.onboard.sync.SyncWorker>().build()
-            )
-            val feedback = if (result is SyncHelper.SyncResult.Success) SubmitFeedback.SUCCESS else SubmitFeedback.SAVED_OFFLINE
-            _state.update {
-                it.copy(
-                    screen = Screen.Start,
-                    currentSurvey = null,
-                    passengerCount = 0,
-                    showSubmitDialog = false,
-                    submitFeedback = feedback,
+            _state.update { it.copy(isSubmitting = true) }
+            try {
+                val s = _state.value.currentSurvey ?: return@launch
+                val loc = locationHelper.getLocation()
+                val submitTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+                val updated = s.copy(
+                    submitTime = submitTime,
+                    latitude = loc.lat,
+                    longitude = loc.lng,
+                    isSubmitted = true,
                 )
+                dao.update(updated)
+                val result = SyncHelper.syncNow(getApplication())
+                androidx.work.WorkManager.getInstance(getApplication()).enqueue(
+                    androidx.work.OneTimeWorkRequestBuilder<com.skopje.onboard.sync.SyncWorker>().build()
+                )
+                val feedback = if (result is SyncHelper.SyncResult.Success) SubmitFeedback.SUCCESS else SubmitFeedback.SAVED_OFFLINE
+                _state.update {
+                    it.copy(
+                        screen = Screen.Start,
+                        currentSurvey = null,
+                        passengerCount = 0,
+                        showSubmitDialog = false,
+                        submitFeedback = feedback,
+                    )
+                }
+                withContext(Dispatchers.Main) {
+                    val app = getApplication<Application>()
+                    vibrateSubmitFeedback(app, feedback)
+                    val msgResId = if (feedback == SubmitFeedback.SUCCESS) R.string.submit_success else R.string.submit_saved_offline
+                    Toast.makeText(app, msgResId, Toast.LENGTH_LONG).show()
+                }
+                kotlinx.coroutines.delay(100)
+                _state.update { it.copy(submitFeedback = null) }
+            } finally {
+                _state.update { it.copy(isSubmitting = false) }
             }
-            withContext(Dispatchers.Main) {
-                val app = getApplication<Application>()
-                vibrateSubmitFeedback(app, feedback)
-                val msgResId = if (feedback == SubmitFeedback.SUCCESS) R.string.submit_success else R.string.submit_saved_offline
-                Toast.makeText(app, msgResId, Toast.LENGTH_LONG).show()
-            }
-            kotlinx.coroutines.delay(100)
-            _state.update { it.copy(submitFeedback = null) }
         }
     }
 

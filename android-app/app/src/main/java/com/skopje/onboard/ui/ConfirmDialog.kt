@@ -33,14 +33,18 @@ fun ResetConfirmDialog(
 fun SubmitConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
+    isSubmitting: Boolean = false,
 ) {
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isSubmitting) onDismiss() },
         title = { Text(stringResource(R.string.done_submit)) },
         text = { Text(stringResource(R.string.submit_confirm)) },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(stringResource(R.string.submit))
+            TextButton(
+                onClick = onConfirm,
+                enabled = !isSubmitting,
+            ) {
+                Text(if (isSubmitting) stringResource(R.string.submitting) else stringResource(R.string.submit))
             }
         },
         dismissButton = {

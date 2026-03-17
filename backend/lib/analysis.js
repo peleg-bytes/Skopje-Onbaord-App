@@ -32,6 +32,10 @@ export async function runAnalysis(supabase, { dateFrom, dateTo } = {}) {
     { key: '22-6', label: 'Night (22–6)', hours: [22, 23, 0, 1, 2, 3, 4, 5], passengers: 0, surveys: 0 },
   ];
   const slotMap = new Map(timeSlots.map((s) => [s.key, { ...s }]));
+  const morningPeakHours = [7, 8, 9];
+  const eveningPeakHours = [17, 18];
+  const morningPeakByStation = new Map();
+  const eveningPeakByStation = new Map();
   let totalSurveys = 0;
   let totalPassengers = 0;
 
@@ -71,6 +75,19 @@ export async function runAnalysis(supabase, { dateFrom, dateTo } = {}) {
           break;
         }
       }
+
+      if (morningPeakHours.includes(hour)) {
+        const m = morningPeakByStation.get(station) || { station, surveys: 0, passengers: 0 };
+        m.surveys += 1;
+        m.passengers += count;
+        morningPeakByStation.set(station, m);
+      }
+      if (eveningPeakHours.includes(hour)) {
+        const e = eveningPeakByStation.get(station) || { station, surveys: 0, passengers: 0 };
+        e.surveys += 1;
+        e.passengers += count;
+        eveningPeakByStation.set(station, e);
+      }
     }
   }
 
@@ -81,11 +98,24 @@ export async function runAnalysis(supabase, { dateFrom, dateTo } = {}) {
     .sort((a, b) => a.hour - b.hour);
   const byTimeSlot = Array.from(slotMap.values()).filter((s) => s.passengers > 0 || s.surveys > 0);
 
-  const peakMorning = slotMap.get('6-9');
-  const peakEvening = slotMap.get('17-19');
+  const morningStations = Array.from(morningPeakByStation.values()).sort((a, b) => b.passengers - a.passengers);
+  const eveningStations = Array.from(eveningPeakByStation.values()).sort((a, b) => b.passengers - a.passengers);
+  const peakMorningTotal = morningStations.reduce((sum, s) => sum + s.passengers, 0);
+  const peakEveningTotal = eveningStations.reduce((sum, s) => sum + s.passengers, 0);
+
   const peakHours = {
-    morning: peakMorning ? { label: '6–9 (incl. rush)', passengers: peakMorning.passengers, surveys: peakMorning.surveys } : null,
-    evening: peakEvening ? { label: '17–19 (rush)', passengers: peakEvening.passengers, surveys: peakEvening.surveys } : null,
+    morning: {
+      label: '7–9',
+      passengers: peakMorningTotal,
+      surveys: morningStations.reduce((sum, s) => sum + s.surveys, 0),
+      byStation: morningStations,
+    },
+    evening: {
+      label: '17–19',
+      passengers: peakEveningTotal,
+      surveys: eveningStations.reduce((sum, s) => sum + s.surveys, 0),
+      byStation: eveningStations,
+    },
   };
 
   const avgPerSurvey = totalSurveys > 0 ? Math.round((totalPassengers / totalSurveys) * 10) / 10 : 0;

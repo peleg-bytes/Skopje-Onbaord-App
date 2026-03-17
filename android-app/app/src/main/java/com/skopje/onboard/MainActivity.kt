@@ -136,6 +136,7 @@ class MainActivity : ComponentActivity() {
                     SubmitConfirmDialog(
                         onConfirm = viewModel::submitSurvey,
                         onDismiss = viewModel::dismissSubmitDialog,
+                        isSubmitting = state.isSubmitting,
                     )
                 }
                 if (state.showExitDialog) {

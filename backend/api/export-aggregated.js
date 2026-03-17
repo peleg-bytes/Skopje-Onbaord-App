@@ -14,8 +14,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { date, station } = req.query || {};
-
   const supabaseResult = getSupabaseClient();
   if (supabaseResult.error) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -23,19 +21,10 @@ export default async function handler(req, res) {
   }
   const supabase = supabaseResult.client;
 
-  let query = supabase.from('surveys').select('*').order('created_at', { ascending: true });
-
-  if (date) {
-    const startOfDay = `${date}T00:00:00.000Z`;
-    const endOfDay = `${date}T23:59:59.999Z`;
-    query = query.gte('created_at', startOfDay).lte('created_at', endOfDay);
-  }
-
-  if (station) {
-    query = query.ilike('station_name', `%${station}%`);
-  }
-
-  const { data: rows, error } = await query;
+  const { data: rows, error } = await supabase
+    .from('surveys')
+    .select('*')
+    .order('created_at', { ascending: true });
 
   if (error) {
     console.error('Supabase query error:', error);
@@ -44,9 +33,10 @@ export default async function handler(req, res) {
   }
 
   const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet('Surveys', { headerRow: true });
+  const worksheet = workbook.addWorksheet('All Surveys', { headerRow: true });
 
   worksheet.columns = [
+    { header: 'Excel', key: 'excel', width: 28 },
     { header: 'Date', key: 'date', width: 12 },
     { header: 'StartTime', key: 'startTime', width: 12 },
     { header: 'EndTime', key: 'endTime', width: 12 },
@@ -62,7 +52,10 @@ export default async function handler(req, res) {
   const serverTime = (iso) => iso ? new Date(iso).toISOString().split('T')[1].split('.')[0] : '';
   for (const r of rows || []) {
     const dateStr = r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : '';
+    const stationSlug = (r.station_name || 'all').replace(/\s+/g, '_').substring(0, 25);
+    const excelName = `${dateStr}_${stationSlug}.xlsx`;
     worksheet.addRow({
+      excel: excelName,
       date: dateStr,
       startTime: timeOnly(r.start_time) || r.start_time || '',
       endTime: timeOnly(r.submit_time) || r.submit_time || '',
@@ -75,9 +68,7 @@ export default async function handler(req, res) {
     });
   }
 
-  const stationSlug = (station || 'all').replace(/\s+/g, '_').substring(0, 30);
-  const dateStr = date || new Date().toISOString().split('T')[0];
-  const filename = `${dateStr}_${stationSlug}.xlsx`;
+  const filename = `aggregated_surveys.xlsx`;
 
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
