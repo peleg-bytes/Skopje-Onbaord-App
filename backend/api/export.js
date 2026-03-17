@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { date, station } = req.query || {};
+  const { date, dateFrom, dateTo, station } = req.query || {};
 
   const supabaseResult = getSupabaseClient();
   if (supabaseResult.error) {
@@ -25,10 +25,11 @@ export default async function handler(req, res) {
 
   let query = supabase.from('surveys').select('*').order('created_at', { ascending: true });
 
-  if (date) {
-    const startOfDay = `${date}T00:00:00.000Z`;
-    const endOfDay = `${date}T23:59:59.999Z`;
-    query = query.gte('created_at', startOfDay).lte('created_at', endOfDay);
+  if (dateFrom || dateTo || date) {
+    const from = dateFrom || date;
+    const to = dateTo || date;
+    if (from) query = query.gte('created_at', `${from}T00:00:00.000Z`);
+    if (to) query = query.lte('created_at', `${to}T23:59:59.999Z`);
   }
 
   if (station) {
@@ -76,7 +77,7 @@ export default async function handler(req, res) {
   }
 
   const stationSlug = (station || 'all').replace(/\s+/g, '_').substring(0, 30);
-  const dateStr = date || new Date().toISOString().split('T')[0];
+  const dateStr = (dateFrom && dateTo) ? `${dateFrom}_to_${dateTo}` : (dateFrom || dateTo || date || new Date().toISOString().split('T')[0]);
   const filename = `${dateStr}_${stationSlug}.xlsx`;
 
   res.setHeader('Access-Control-Allow-Origin', '*');

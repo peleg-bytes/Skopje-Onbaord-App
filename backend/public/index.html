@@ -185,6 +185,7 @@
     .bar-labels { display: flex; gap: 4px; font-size: 0.7rem; color: var(--text-muted); }
     .bar-labels span { min-width: 12px; text-align: center; }
     .btn-group { display: flex; gap: 0.5rem; }
+    .export-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
     .btn-cell { white-space: nowrap; }
     .btn-cell .btn { margin-right: 0.35rem; }
     .chart-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; }
@@ -229,48 +230,21 @@
 
     <div class="section">
       <div class="tabs">
-        <button class="tab active" data-tab="exports">Excel Exports</button>
-        <button class="tab" data-tab="surveys">All Surveys</button>
-        <button class="tab" data-tab="custom">Custom Export</button>
+        <button class="tab active" data-tab="surveys">Surveys</button>
         <button class="tab" data-tab="analysis">Analysis</button>
       </div>
 
-      <div id="tab-exports" class="tab-content active">
+      <div id="tab-surveys" class="tab-content active">
         <div class="section-header">
-          <h2>Available Excel Files</h2>
-          <div class="btn-group">
-            <button class="btn btn-primary btn-sm" id="downloadAllExcels">Download All Excels</button>
-            <button class="btn btn-primary btn-sm" id="downloadAggregatedExcel">Download Aggregated Excel</button>
-            <button class="btn btn-secondary btn-sm" id="refreshExports">Refresh</button>
-          </div>
-        </div>
-        <div class="section-body">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>File</th>
-                  <th>Date</th>
-                  <th>Station</th>
-                  <th>Surveys</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="exportList">
-                <tr><td colspan="5" class="empty-state">Loading...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div id="tab-surveys" class="tab-content">
-        <div class="section-header">
-          <h2>Survey Records</h2>
+          <h2>Surveys</h2>
           <div class="filters">
             <div class="filter-group">
-              <label>Date</label>
-              <input type="date" id="filterDate">
+              <label>From date</label>
+              <input type="date" id="filterDateFrom">
+            </div>
+            <div class="filter-group">
+              <label>To date</label>
+              <input type="date" id="filterDateTo">
             </div>
             <div class="filter-group">
               <label>Station</label>
@@ -280,6 +254,13 @@
           </div>
         </div>
         <div class="section-body">
+          <div class="export-actions" style="margin-bottom: 1rem;">
+            <button class="btn btn-secondary btn-sm" id="previewBtn">Preview</button>
+            <button class="btn btn-primary btn-sm" id="downloadExcelBtn">Download Excel</button>
+            <button class="btn btn-primary btn-sm" id="downloadAllExcels">Download All Excels</button>
+            <button class="btn btn-primary btn-sm" id="downloadAggregatedExcel">Download Aggregated Excel</button>
+          </div>
+          <div id="exportMessage"></div>
           <div class="table-wrap">
             <table>
               <thead>
@@ -297,31 +278,10 @@
                 </tr>
               </thead>
               <tbody id="surveysTable">
-                <tr><td colspan="10" class="empty-state">Click Load to fetch surveys</td></tr>
+                <tr><td colspan="10" class="empty-state">Loading...</td></tr>
               </tbody>
             </table>
           </div>
-        </div>
-      </div>
-
-      <div id="tab-custom" class="tab-content">
-        <div class="section-header">
-          <h2>Generate Custom Excel</h2>
-        </div>
-        <div class="section-body">
-          <form id="exportForm" class="filters" style="margin-bottom: 1rem;">
-            <div class="filter-group">
-              <label>Date (optional)</label>
-              <input type="date" id="customDate" name="date">
-            </div>
-            <div class="filter-group">
-              <label>Station (optional)</label>
-              <input type="text" id="customStation" name="station" placeholder="e.g. Central Station">
-            </div>
-            <button type="button" class="btn btn-secondary" id="customPreviewBtn">Preview</button>
-            <button type="submit" class="btn btn-primary" id="exportBtn">Generate & Download Excel</button>
-          </form>
-          <div id="exportMessage"></div>
         </div>
       </div>
 
@@ -405,71 +365,28 @@
       }
     }
 
-    async function loadExportOptions() {
-      const tbody = document.getElementById('exportList');
-      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading...</td></tr>';
-      try {
-        const r = await fetch(base + '/api/export-options');
-        const d = await r.json().catch(() => ({}));
-        if (!r.ok) {
-          throw new Error(d.error || 'API returned ' + r.status);
-        }
-        const options = d.exportOptions || [];
-        if (options.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No survey data yet. Surveys will appear here once submitted from the app.</td></tr>';
-          return;
-        }
-        tbody.innerHTML = options.map(o => {
-          const filename = `${o.date}_${(o.station || 'all').replace(/\s+/g, '_').substring(0, 25)}.xlsx`;
-          const params = `date=${encodeURIComponent(o.date)}&station=${encodeURIComponent(o.station)}`;
-          return `
-            <tr>
-              <td>${escapeHtml(filename)}</td>
-              <td>${escapeHtml(o.date)}</td>
-              <td>${escapeHtml(o.station)}</td>
-              <td>${o.count}</td>
-              <td class="btn-cell">
-                <button class="btn btn-secondary btn-sm export-preview" data-params="${escapeHtml(params)}" data-filename="${escapeHtml(filename)}">Preview</button>
-                <button class="btn btn-primary btn-sm export-download" data-params="${escapeHtml(params)}" data-filename="${escapeHtml(filename)}">Download</button>
-              </td>
-            </tr>
-          `;
-        }).join('');
-        tbody.querySelectorAll('.export-preview').forEach(btn => {
-          btn.addEventListener('click', () => showPreviewModal(btn.dataset.params, btn.dataset.filename));
-        });
-        tbody.querySelectorAll('.export-download').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            btn.disabled = true;
-            try {
-              const r = await fetch(base + '/api/export?' + btn.dataset.params);
-              if (!r.ok) throw new Error('Download failed');
-              const blob = await r.blob();
-              const a = document.createElement('a');
-              a.href = URL.createObjectURL(blob);
-              a.download = btn.dataset.filename;
-              a.click();
-              URL.revokeObjectURL(a.href);
-            } finally {
-              btn.disabled = false;
-            }
-          });
-        });
-      } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><strong>Failed to load export options.</strong><br><small style="margin-top:0.5rem;display:block">' + escapeHtml(e.message || String(e)) + '</small><br><small>Check Vercel env vars: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY. Ensure the surveys table exists in Supabase.</small></td></tr>';
-      }
-      loadStats();
+    function getFilterParams() {
+      const dateFrom = document.getElementById('filterDateFrom').value;
+      const dateTo = document.getElementById('filterDateTo').value;
+      const station = document.getElementById('filterStation').value.trim();
+      const params = new URLSearchParams();
+      if (dateFrom) params.set('dateFrom', dateFrom);
+      if (dateTo) params.set('dateTo', dateTo);
+      if (station) params.set('station', station);
+      return params.toString();
     }
 
     async function loadSurveys() {
       const tbody = document.getElementById('surveysTable');
       tbody.innerHTML = '<tr><td colspan="10" class="empty-state">Loading...</td></tr>';
-      const date = document.getElementById('filterDate').value;
+      const dateFrom = document.getElementById('filterDateFrom').value;
+      const dateTo = document.getElementById('filterDateTo').value;
       const station = document.getElementById('filterStation').value.trim();
       const params = new URLSearchParams();
-      if (date) params.set('date', date);
+      if (dateFrom) params.set('dateFrom', dateFrom);
+      if (dateTo) params.set('dateTo', dateTo);
       if (station) params.set('station', station);
-      params.set('limit', '200');
+      params.set('limit', '2000');
       try {
         const r = await fetch(base + '/api/surveys?' + params);
         const d = await r.json();
@@ -520,6 +437,7 @@
       } catch (e) {
         tbody.innerHTML = '<tr><td colspan="10" class="empty-state">Failed to load surveys.</td></tr>';
       }
+      loadStats();
     }
 
     function escapeHtml(s) {
@@ -815,12 +733,48 @@
         tab.classList.add('active');
         const tabEl = document.getElementById('tab-' + tab.dataset.tab);
         if (tabEl) tabEl.classList.add('active');
+        if (tab.dataset.tab === 'surveys') loadSurveys();
         if (tab.dataset.tab === 'analysis') loadAnalysis();
       });
     });
 
-    document.getElementById('refreshExports').addEventListener('click', () => {
-      loadExportOptions();
+    document.getElementById('previewBtn').addEventListener('click', () => {
+      const params = getFilterParams();
+      const dateFrom = document.getElementById('filterDateFrom').value;
+      const dateTo = document.getElementById('filterDateTo').value;
+      const station = document.getElementById('filterStation').value.trim();
+      const dateStr = (dateFrom && dateTo) ? `${dateFrom}_to_${dateTo}` : (dateFrom || dateTo || new Date().toISOString().split('T')[0]);
+      const stationSlug = (station || 'all').replace(/\s+/g, '_').substring(0, 25);
+      showPreviewModal(params, `${dateStr}_${stationSlug}.xlsx`);
+    });
+
+    document.getElementById('downloadExcelBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('downloadExcelBtn');
+      const msg = document.getElementById('exportMessage');
+      const params = getFilterParams();
+      btn.disabled = true;
+      showMessage(msg, '');
+      try {
+        const r = await fetch(base + '/api/export?' + params);
+        if (!r.ok) throw new Error('Export failed');
+        const blob = await r.blob();
+        const cd = r.headers.get('Content-Disposition');
+        let filename = 'surveys.xlsx';
+        if (cd) {
+          const m = cd.match(/filename="([^"]+)"/);
+          if (m) filename = m[1];
+        }
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        showMessage(msg, 'Download started.', 'success');
+      } catch (err) {
+        showMessage(msg, err.message || 'Export failed.', 'error');
+      } finally {
+        btn.disabled = false;
+      }
     });
 
     document.getElementById('downloadAllExcels').addEventListener('click', async () => {
@@ -878,53 +832,8 @@
 
     document.getElementById('loadSurveys').addEventListener('click', loadSurveys);
 
-    document.getElementById('customPreviewBtn').addEventListener('click', () => {
-      const date = document.getElementById('customDate').value;
-      const station = document.getElementById('customStation').value.trim();
-      const params = new URLSearchParams();
-      if (date) params.set('date', date);
-      if (station) params.set('station', station);
-      const dateStr = date || new Date().toISOString().split('T')[0];
-      const stationSlug = (station || 'all').replace(/\s+/g, '_').substring(0, 25);
-      showPreviewModal(params.toString(), `${dateStr}_${stationSlug}.xlsx`);
-    });
-
-    document.getElementById('exportForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = document.getElementById('exportBtn');
-      const msg = document.getElementById('exportMessage');
-      const date = document.getElementById('customDate').value;
-      const station = document.getElementById('customStation').value.trim();
-      btn.disabled = true;
-      showMessage(msg, '');
-      const params = new URLSearchParams();
-      if (date) params.set('date', date);
-      if (station) params.set('station', station);
-      try {
-        const r = await fetch(base + '/api/export?' + params);
-        if (!r.ok) throw new Error('Export failed');
-        const blob = await r.blob();
-        const cd = r.headers.get('Content-Disposition');
-        let filename = 'surveys.xlsx';
-        if (cd) {
-          const m = cd.match(/filename="([^"]+)"/);
-          if (m) filename = m[1];
-        }
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(a.href);
-        showMessage(msg, 'Download started.', 'success');
-      } catch (err) {
-        showMessage(msg, err.message || 'Export failed.', 'error');
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
     loadStats();
-    loadExportOptions();
+    loadSurveys();
 
     // Load analysis by default when Analysis tab is first shown (tab is not active on load, so we load when user clicks it)
     // If Analysis tab is active on page load (e.g. direct link), load it

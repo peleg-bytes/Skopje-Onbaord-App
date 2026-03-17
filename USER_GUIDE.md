@@ -37,22 +37,16 @@ Tap **Done / Submit** and confirm. If you’re online, you’ll see “Submitted
 
 Open your admin page in a browser (for example, `https://your-app.vercel.app`).
 
-### Downloading Excel files
+### Surveys page
 
-The **Excel Exports** tab shows all available exports, grouped by date and station. You can:
+The **Surveys** tab shows all survey records by default. You can:
 
-- **Download All Excels** — get everything in one ZIP file
-- **Download Aggregated Excel** — one Excel file with all surveys, plus a column showing which export each row came from
-- **Preview** or **Download** — for each export, preview the data or download that Excel file
-- **Refresh** — update the list
-
-### Custom export
-
-Need a specific date or station? Use the **Custom Export** tab. Enter a date and/or station name (both optional), then **Preview** to see the data or **Generate & Download Excel** to download it.
-
-### Viewing all surveys
-
-The **All Surveys** tab lets you filter by date and station, then **Load** to see the records in a table. You’ll see date, start time, end time, submit time, surveyor, station, coordinates, and passenger count.
+- **Filter** — Use **From date**, **To date**, and **Station** to narrow the results, then **Load** to apply.
+- **Preview** — See the filtered data in a popup before downloading.
+- **Download Excel** — Download the filtered surveys as an Excel file.
+- **Download All Excels** — Get a ZIP of all exports (by date and station).
+- **Download Aggregated Excel** — One Excel file with all surveys and a column showing which export each row came from.
+- **Delete** — Remove a survey from the table (one row at a time).
 
 ### Analysis and charts
 
