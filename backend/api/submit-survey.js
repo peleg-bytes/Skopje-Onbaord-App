@@ -44,6 +44,7 @@ export default async function handler(req, res) {
     .maybeSingle();
 
   if (existing) {
+    console.log('[submit-survey] Duplicate skipped:', { surveyorId, stationName, startTime, passengerCount });
     res.setHeader('Access-Control-Allow-Origin', '*');
     return res.status(200).json({ success: true }); // Idempotent: treat duplicate as success
   }
@@ -59,13 +60,14 @@ export default async function handler(req, res) {
   });
 
   if (error) {
-    console.error('Supabase insert error:', error);
+    console.error('[submit-survey] Supabase insert error:', error);
     res.setHeader('Access-Control-Allow-Origin', '*');
     return res.status(500).json({
       error: 'Failed to save survey: ' + sanitizeSupabaseError(error),
     });
   }
 
+  console.log('[submit-survey] Inserted:', { surveyorId, stationName, startTime, passengerCount });
   res.setHeader('Access-Control-Allow-Origin', '*');
   return res.status(200).json({ success: true });
 }

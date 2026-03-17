@@ -108,29 +108,10 @@
     .btn-primary:hover { background: var(--accent-hover); }
     .btn-secondary { background: var(--surface-hover); color: var(--text); }
     .btn-secondary:hover { background: var(--border); }
+    .btn-delete { background: rgba(239, 68, 68, 0.2); color: var(--error); }
+    .btn-delete:hover { background: rgba(239, 68, 68, 0.35); }
     .btn-sm { padding: 0.35rem 0.65rem; font-size: 0.8rem; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-    .export-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 0.75rem;
-    }
-    .export-card {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 1rem;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 0.75rem;
-    }
-    .export-card:hover { border-color: var(--accent); }
-    .export-card .info { flex: 1; min-width: 0; }
-    .export-card .btn-group { margin-top: 0.5rem; }
-    .export-card .filename { font-weight: 500; font-size: 0.9rem; }
-    .export-card .meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
 
     table {
       width: 100%;
@@ -204,6 +185,8 @@
     .bar-labels { display: flex; gap: 4px; font-size: 0.7rem; color: var(--text-muted); }
     .bar-labels span { min-width: 12px; text-align: center; }
     .btn-group { display: flex; gap: 0.5rem; }
+    .btn-cell { white-space: nowrap; }
+    .btn-cell .btn { margin-right: 0.35rem; }
     .chart-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; }
     .chart-container { position: relative; height: 220px; }
     .peak-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
@@ -262,8 +245,21 @@
           </div>
         </div>
         <div class="section-body">
-          <div id="exportList" class="export-grid">
-            <div class="empty-state">Loading...</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Date</th>
+                  <th>Station</th>
+                  <th>Surveys</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="exportList">
+                <tr><td colspan="5" class="empty-state">Loading...</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -297,10 +293,11 @@
                   <th>Lat</th>
                   <th>Lng</th>
                   <th>Count</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody id="surveysTable">
-                <tr><td colspan="9" class="empty-state">Click Load to fetch surveys</td></tr>
+                <tr><td colspan="10" class="empty-state">Click Load to fetch surveys</td></tr>
               </tbody>
             </table>
           </div>
@@ -409,8 +406,8 @@
     }
 
     async function loadExportOptions() {
-      const list = document.getElementById('exportList');
-      list.innerHTML = '<div class="empty-state">Loading...</div>';
+      const tbody = document.getElementById('exportList');
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Loading...</td></tr>';
       try {
         const r = await fetch(base + '/api/export-options');
         const d = await r.json().catch(() => ({}));
@@ -419,29 +416,29 @@
         }
         const options = d.exportOptions || [];
         if (options.length === 0) {
-          list.innerHTML = '<div class="empty-state">No survey data yet. Surveys will appear here once submitted from the app.</div>';
+          tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No survey data yet. Surveys will appear here once submitted from the app.</td></tr>';
           return;
         }
-        list.innerHTML = options.map(o => {
+        tbody.innerHTML = options.map(o => {
           const filename = `${o.date}_${(o.station || 'all').replace(/\s+/g, '_').substring(0, 25)}.xlsx`;
           const params = `date=${encodeURIComponent(o.date)}&station=${encodeURIComponent(o.station)}`;
           return `
-            <div class="export-card">
-              <div class="info">
-                <div class="filename">${escapeHtml(filename)}</div>
-                <div class="meta">${o.count} survey(s) · ${o.date} · ${escapeHtml(o.station)}</div>
-              </div>
-              <div class="btn-group">
+            <tr>
+              <td>${escapeHtml(filename)}</td>
+              <td>${escapeHtml(o.date)}</td>
+              <td>${escapeHtml(o.station)}</td>
+              <td>${o.count}</td>
+              <td class="btn-cell">
                 <button class="btn btn-secondary btn-sm export-preview" data-params="${escapeHtml(params)}" data-filename="${escapeHtml(filename)}">Preview</button>
                 <button class="btn btn-primary btn-sm export-download" data-params="${escapeHtml(params)}" data-filename="${escapeHtml(filename)}">Download</button>
-              </div>
-            </div>
+              </td>
+            </tr>
           `;
         }).join('');
-        list.querySelectorAll('.export-preview').forEach(btn => {
+        tbody.querySelectorAll('.export-preview').forEach(btn => {
           btn.addEventListener('click', () => showPreviewModal(btn.dataset.params, btn.dataset.filename));
         });
-        list.querySelectorAll('.export-download').forEach(btn => {
+        tbody.querySelectorAll('.export-download').forEach(btn => {
           btn.addEventListener('click', async () => {
             btn.disabled = true;
             try {
@@ -459,14 +456,14 @@
           });
         });
       } catch (e) {
-        list.innerHTML = '<div class="empty-state"><strong>Failed to load export options.</strong><br><small style="margin-top:0.5rem;display:block">' + escapeHtml(e.message || String(e)) + '</small><br><small>Check Vercel env vars: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY. Ensure the surveys table exists in Supabase.</small></div>';
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><strong>Failed to load export options.</strong><br><small style="margin-top:0.5rem;display:block">' + escapeHtml(e.message || String(e)) + '</small><br><small>Check Vercel env vars: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY. Ensure the surveys table exists in Supabase.</small></td></tr>';
       }
       loadStats();
     }
 
     async function loadSurveys() {
       const tbody = document.getElementById('surveysTable');
-      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Loading...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="empty-state">Loading...</td></tr>';
       const date = document.getElementById('filterDate').value;
       const station = document.getElementById('filterStation').value.trim();
       const params = new URLSearchParams();
@@ -478,7 +475,7 @@
         const d = await r.json();
         const surveys = d.surveys || [];
         if (surveys.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No surveys found.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No surveys found.</td></tr>';
           return;
         }
         tbody.innerHTML = surveys.map(s => {
@@ -489,7 +486,7 @@
           const endT = timeOnly(s.submit_time) || s.submit_time || '—';
           const submitT = serverTime(s.created_at);
           return `
-            <tr>
+            <tr data-id="${escapeHtml(s.id)}">
               <td>${dateStr}</td>
               <td>${startT}</td>
               <td>${endT}</td>
@@ -499,11 +496,29 @@
               <td>${s.latitude ?? '—'}</td>
               <td>${s.longitude ?? '—'}</td>
               <td>${s.passenger_count}</td>
+              <td><button class="btn btn-sm btn-delete survey-delete" data-id="${escapeHtml(s.id)}" title="Delete">Delete</button></td>
             </tr>
           `;
         }).join('');
+        tbody.querySelectorAll('.survey-delete').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            if (!confirm('Delete this survey?')) return;
+            const id = btn.dataset.id;
+            btn.disabled = true;
+            try {
+              const r = await fetch(base + '/api/delete-survey?id=' + encodeURIComponent(id), { method: 'DELETE' });
+              if (!r.ok) throw new Error('Delete failed');
+              btn.closest('tr').remove();
+              loadStats();
+            } catch (e) {
+              alert(e.message || 'Delete failed');
+            } finally {
+              btn.disabled = false;
+            }
+          });
+        });
       } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="9" class="empty-state">Failed to load surveys.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="empty-state">Failed to load surveys.</td></tr>';
       }
     }
 
