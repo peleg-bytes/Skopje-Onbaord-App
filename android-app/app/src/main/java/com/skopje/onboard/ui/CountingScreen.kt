@@ -128,34 +128,33 @@ fun CountingScreen(
             Text(stringResource(R.string.count), style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
 
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    CounterButton(label = "+5", isPositive = true, sizeLarge = false) {
+                    CounterButton(label = "+5", isPositive = true, sizeLarge = false, modifier = Modifier.weight(1f)) {
                         doVibrate()
                         onAdd(5)
                     }
-                    CounterButton(label = "-5", isPositive = false, sizeLarge = false, enabled = passengerCount >= 5) {
-                        doVibrate()
-                        onAdd(-5)
-                    }
-                }
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    CounterButton(label = "+1", isPositive = true, sizeLarge = true) {
+                    CounterButton(label = "+1", isPositive = true, sizeLarge = true, modifier = Modifier.weight(1f)) {
                         doVibrate()
                         onAdd(1)
                     }
-                    CounterButton(label = "-1", isPositive = false, sizeLarge = true, enabled = passengerCount > 0) {
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    CounterButton(label = "-5", isPositive = false, sizeLarge = false, enabled = passengerCount >= 5, modifier = Modifier.weight(1f)) {
+                        doVibrate()
+                        onAdd(-5)
+                    }
+                    CounterButton(label = "-1", isPositive = false, sizeLarge = true, enabled = passengerCount > 0, modifier = Modifier.weight(1f)) {
                         doVibrate()
                         onAdd(-1)
                     }
@@ -198,6 +197,7 @@ private fun CounterButton(
     isPositive: Boolean,
     sizeLarge: Boolean = false,
     enabled: Boolean = true,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     val containerColor = if (isPositive) Color(0xFF66BB6A) else Color(0xFFE57373)
@@ -206,7 +206,7 @@ private fun CounterButton(
     Button(
         onClick = onClick,
         enabled = enabled,
-        modifier = Modifier
+        modifier = modifier
             .height(height)
             .padding(8.dp),
         colors = ButtonDefaults.buttonColors(

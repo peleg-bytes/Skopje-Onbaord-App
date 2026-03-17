@@ -6,6 +6,8 @@
   <title>Skopje Onboard Survey - Admin</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <style>
     :root {
       --bg: #0f172a;
@@ -231,6 +233,7 @@
     <div class="section">
       <div class="tabs">
         <button class="tab active" data-tab="surveys">Surveys</button>
+        <button class="tab" data-tab="map">Map</button>
         <button class="tab" data-tab="analysis">Analysis</button>
       </div>
 
@@ -282,6 +285,40 @@
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <div id="tab-map" class="tab-content">
+        <div class="section-header">
+          <h2>Stations Map</h2>
+          <div class="filters">
+            <div class="filter-group">
+              <label>From date</label>
+              <input type="date" id="mapDateFrom">
+            </div>
+            <div class="filter-group">
+              <label>To date</label>
+              <input type="date" id="mapDateTo">
+            </div>
+            <div class="filter-group">
+              <label>Station</label>
+              <input type="text" id="mapStationFilter" placeholder="Filter by name">
+            </div>
+            <div class="filter-group">
+              <label>Min passengers</label>
+              <input type="number" id="mapMinPassengers" placeholder="Min" min="0" style="width: 80px;">
+            </div>
+            <div class="filter-group">
+              <label>Max passengers</label>
+              <input type="number" id="mapMaxPassengers" placeholder="Max" min="0" style="width: 80px;">
+            </div>
+            <button class="btn btn-secondary btn-sm" id="mapRefresh">Refresh</button>
+          </div>
+        </div>
+        <div class="section-body">
+          <p class="analysis-note" style="margin-bottom: 0.75rem; color: var(--text-muted);">Circle size = passenger count. Map loads automatically. Use filters to narrow results.</p>
+          <div id="mapStatus" style="margin-bottom: 0.5rem; min-height: 1.25rem;"></div>
+          <div id="mapContainer" style="height: 500px; border-radius: 8px; overflow: hidden; background: var(--bg);"></div>
         </div>
       </div>
 
@@ -696,6 +733,122 @@
 
     document.getElementById('loadAnalysis').addEventListener('click', loadAnalysis);
 
+    let mapInstance = null;
+    let mapCircles = [];
+    let mapStationsData = [];
+
+    function getMapFilters() {
+      const station = (document.getElementById('mapStationFilter').value || '').trim().toLowerCase();
+      const minP = parseInt(document.getElementById('mapMinPassengers').value, 10);
+      const maxP = parseInt(document.getElementById('mapMaxPassengers').value, 10);
+      return { station, minPassengers: isNaN(minP) ? null : minP, maxPassengers: isNaN(maxP) ? null : maxP };
+    }
+
+    function applyMapFilters() {
+      const { station, minPassengers, maxPassengers } = getMapFilters();
+      return mapStationsData.filter(s => {
+        if (station && !(s.station || '').toLowerCase().includes(station)) return false;
+        if (minPassengers != null && s.passengers < minPassengers) return false;
+        if (maxPassengers != null && s.passengers > maxPassengers) return false;
+        return true;
+      });
+    }
+
+    function renderMapCircles(stations, fitBounds = true) {
+      if (!mapInstance) return;
+      mapCircles.forEach(c => mapInstance.removeLayer(c));
+      mapCircles = [];
+      const statusEl = document.getElementById('mapStatus');
+      if (stations.length === 0) {
+        statusEl.textContent = 'No stations match the filters.';
+        statusEl.style.color = 'var(--text-muted)';
+        return;
+      }
+      statusEl.textContent = `${stations.length} of ${mapStationsData.length} station(s) shown.`;
+      statusEl.style.color = 'var(--text-muted)';
+      const maxPassengers = Math.max(...stations.map(s => s.passengers), 1);
+      const minRadius = 8;
+      const maxRadius = 60;
+      for (const s of stations) {
+        const radius = minRadius + (s.passengers / maxPassengers) * (maxRadius - minRadius);
+        const circle = L.circleMarker([s.lat, s.lng], {
+          radius,
+          fillColor: '#3b82f6',
+          color: '#1d4ed8',
+          weight: 1,
+          opacity: 1,
+          fillOpacity: 0.6,
+        }).addTo(mapInstance).bindPopup(
+          `<strong>${escapeHtml(s.station)}</strong><br>Passengers: ${s.passengers}<br>Surveys: ${s.surveys}`
+        );
+        mapCircles.push(circle);
+      }
+      if (fitBounds) {
+        if (stations.length === 1) {
+          mapInstance.setView([stations[0].lat, stations[0].lng], 14);
+        } else if (stations.length > 1) {
+          const bounds = L.latLngBounds(stations.map(s => [s.lat, s.lng]));
+          mapInstance.fitBounds(bounds, { padding: [30, 30] });
+        }
+      }
+    }
+
+    async function fetchMapData() {
+      const dateFrom = document.getElementById('mapDateFrom').value;
+      const dateTo = document.getElementById('mapDateTo').value;
+      const params = new URLSearchParams();
+      if (dateFrom) params.set('dateFrom', dateFrom);
+      if (dateTo) params.set('dateTo', dateTo);
+      const r = await fetch(base + '/api/stations-map?' + params);
+      const d = await r.json();
+      if (d.error) throw new Error(d.error);
+      return d.stations || [];
+    }
+
+    async function loadMap() {
+      const container = document.getElementById('mapContainer');
+      const statusEl = document.getElementById('mapStatus');
+      try {
+        statusEl.textContent = 'Loading...';
+        mapStationsData = await fetchMapData();
+        if (mapStationsData.length === 0) {
+          statusEl.textContent = 'No stations with GPS data in this range.';
+          statusEl.style.color = 'var(--text-muted)';
+          if (mapInstance) {
+            mapCircles.forEach(c => mapInstance.removeLayer(c));
+            mapCircles = [];
+          }
+          return;
+        }
+        if (!mapInstance) {
+          mapInstance = L.map('mapContainer').setView([41.9973, 21.428], 12);
+          L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          }).addTo(mapInstance);
+        }
+        const filtered = applyMapFilters();
+        renderMapCircles(filtered);
+      } catch (e) {
+        statusEl.textContent = '';
+        if (!mapInstance) {
+          container.innerHTML = '<div class="empty-state"><strong>Failed to load map.</strong><br><small>' + escapeHtml(e.message || String(e)) + '</small></div>';
+        } else {
+          alert(e.message || 'Failed to load map');
+        }
+      }
+    }
+
+    function updateMapFromFilters() {
+      if (mapStationsData.length === 0) return;
+      const filtered = applyMapFilters();
+      renderMapCircles(filtered, false);
+    }
+
+    document.getElementById('mapRefresh').addEventListener('click', loadMap);
+    document.getElementById('mapStationFilter').addEventListener('input', updateMapFromFilters);
+    document.getElementById('mapMinPassengers').addEventListener('input', updateMapFromFilters);
+    document.getElementById('mapMaxPassengers').addEventListener('input', updateMapFromFilters);
+
     document.getElementById('exportAnalysis').addEventListener('click', async () => {
       const btn = document.getElementById('exportAnalysis');
       const dateFrom = document.getElementById('analysisDateFrom').value;
@@ -734,6 +887,11 @@
         const tabEl = document.getElementById('tab-' + tab.dataset.tab);
         if (tabEl) tabEl.classList.add('active');
         if (tab.dataset.tab === 'surveys') loadSurveys();
+        if (tab.dataset.tab === 'map') {
+          if (mapStationsData.length === 0) loadMap();
+          else updateMapFromFilters();
+          setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 100);
+        }
         if (tab.dataset.tab === 'analysis') loadAnalysis();
       });
     });

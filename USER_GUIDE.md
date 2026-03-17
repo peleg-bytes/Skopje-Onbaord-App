@@ -48,6 +48,10 @@ The **Surveys** tab shows all survey records by default. You can:
 - **Download Aggregated Excel** — One Excel file with all surveys and a column showing which export each row came from.
 - **Delete** — Remove a survey from the table (one row at a time).
 
+### Map
+
+The **Map** tab shows stations on a map and loads automatically when you open it. Each station appears as a circle; the size reflects passenger count (larger = more passengers). Click a circle to see details. Use the filters to narrow results: **From date**, **To date**, **Station** (name), **Min passengers**, **Max passengers**. Filters apply as you type or change values. Click **Refresh** to re-fetch data when you change the date range.
+
 ### Analysis and charts
 
 The **Analysis** tab shows charts and summaries. Pick a date range, tap **Apply date filter**, and you’ll see:
