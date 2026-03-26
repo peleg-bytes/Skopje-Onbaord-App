@@ -4,12 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Skopje Onboard Survey - Admin</title>
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('skopje-admin-theme');
+        if (t !== 'light' && t !== 'dark') t = 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <style>
-    :root {
+    :root, html[data-theme="dark"] {
+      color-scheme: dark;
       --bg: #0f172a;
       --surface: #1e293b;
       --surface-hover: #334155;
@@ -20,6 +32,29 @@
       --accent-hover: #2563eb;
       --success: #22c55e;
       --error: #ef4444;
+      --chart-tick: #94a3b8;
+      --chart-legend: #94a3b8;
+      --row-hover: rgba(59, 130, 246, 0.08);
+      --btn-delete-bg: rgba(239, 68, 68, 0.2);
+      --btn-delete-hover: rgba(239, 68, 68, 0.35);
+    }
+    html[data-theme="light"] {
+      color-scheme: light;
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --surface-hover: #e2e8f0;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --success: #15803d;
+      --error: #dc2626;
+      --chart-tick: #475569;
+      --chart-legend: #475569;
+      --row-hover: rgba(37, 99, 235, 0.08);
+      --btn-delete-bg: rgba(220, 38, 38, 0.12);
+      --btn-delete-hover: rgba(220, 38, 38, 0.22);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -28,6 +63,7 @@
       color: var(--text);
       min-height: 100vh;
       line-height: 1.5;
+      transition: background 0.2s ease, color 0.2s ease;
     }
     .container { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
     header {
@@ -36,8 +72,41 @@
       padding: 1rem 0;
       margin-bottom: 1.5rem;
     }
+    .header-inner {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .header-text { flex: 1; min-width: 12rem; }
     header h1 { font-size: 1.5rem; font-weight: 600; }
     header p { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
+    .theme-toggle-wrap { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+    .theme-toggle-wrap .label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .theme-switch {
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--bg);
+    }
+    .theme-switch button {
+      padding: 0.45rem 0.85rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .theme-switch button:hover { color: var(--text); background: var(--surface-hover); }
+    .theme-switch button.active {
+      background: var(--accent);
+      color: #fff;
+    }
+    html[data-theme="light"] .theme-switch button.active { color: #fff; }
 
     .stats-grid {
       display: grid;
@@ -110,8 +179,8 @@
     .btn-primary:hover { background: var(--accent-hover); }
     .btn-secondary { background: var(--surface-hover); color: var(--text); }
     .btn-secondary:hover { background: var(--border); }
-    .btn-delete { background: rgba(239, 68, 68, 0.2); color: var(--error); }
-    .btn-delete:hover { background: rgba(239, 68, 68, 0.35); }
+    .btn-delete { background: var(--btn-delete-bg); color: var(--error); }
+    .btn-delete:hover { background: var(--btn-delete-hover); }
     .btn-sm { padding: 0.35rem 0.65rem; font-size: 0.8rem; }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
@@ -133,7 +202,7 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
-    tr:hover td { background: rgba(59, 130, 246, 0.05); }
+    tr:hover td { background: var(--row-hover); }
     .table-wrap { overflow-x: auto; }
 
     .empty-state {
@@ -146,6 +215,8 @@
     .message { padding: 0.75rem; border-radius: 6px; margin-top: 0.75rem; }
     .message.success { background: rgba(34, 197, 94, 0.15); color: var(--success); }
     .message.error { background: rgba(239, 68, 68, 0.15); color: var(--error); }
+    html[data-theme="light"] .message.success { background: rgba(22, 163, 74, 0.12); }
+    html[data-theme="light"] .message.error { background: rgba(220, 38, 38, 0.1); }
 
     .loading { opacity: 0.7; pointer-events: none; }
     .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); }
@@ -209,8 +280,19 @@
 <body>
   <header>
     <div class="container">
-      <h1>Skopje Onboard Survey</h1>
-      <p>Admin dashboard — view and download survey results from Skopje field surveyors</p>
+      <div class="header-inner">
+        <div class="header-text">
+          <h1>Skopje Onboard Survey</h1>
+          <p>Admin dashboard — view and download survey results from Skopje field surveyors</p>
+        </div>
+        <div class="theme-toggle-wrap">
+          <span class="label">Theme</span>
+          <div class="theme-switch" role="group" aria-label="Color theme">
+            <button type="button" id="themeLight" data-set-theme="light">Light</button>
+            <button type="button" id="themeDark" data-set-theme="dark">Dark</button>
+          </div>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -378,6 +460,39 @@
 
   <script>
     const base = window.location.origin;
+    const THEME_STORAGE_KEY = 'skopje-admin-theme';
+
+    function getTheme() {
+      return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    }
+
+    function syncThemeSwitchUI() {
+      const t = getTheme();
+      var lightBtn = document.getElementById('themeLight');
+      var darkBtn = document.getElementById('themeDark');
+      if (lightBtn) lightBtn.classList.toggle('active', t === 'light');
+      if (darkBtn) darkBtn.classList.toggle('active', t === 'dark');
+    }
+
+    function chartTickColor() {
+      return getComputedStyle(document.documentElement).getPropertyValue('--chart-tick').trim() || '#94a3b8';
+    }
+
+    function chartLegendColor() {
+      return getComputedStyle(document.documentElement).getPropertyValue('--chart-legend').trim() || '#94a3b8';
+    }
+
+    function applyTheme(theme) {
+      if (theme !== 'light' && theme !== 'dark') return;
+      document.documentElement.setAttribute('data-theme', theme);
+      try { localStorage.setItem(THEME_STORAGE_KEY, theme); } catch (e) {}
+      syncThemeSwitchUI();
+      if (typeof syncMapBasemap === 'function') syncMapBasemap();
+      var analysisTab = document.getElementById('tab-analysis');
+      if (analysisTab && analysisTab.classList.contains('active') && typeof loadAnalysis === 'function') {
+        loadAnalysis();
+      }
+    }
 
     function showMessage(el, text, type) {
       el.textContent = text;
@@ -680,7 +795,10 @@
         `;
 
         if (typeof Chart !== 'undefined') {
-          const opts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } } };
+          const tick = chartTickColor();
+          const leg = chartLegendColor();
+          const scaleColors = { x: { ticks: { color: tick } }, y: { ticks: { color: tick } } };
+          const opts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: leg } } } };
           if (byStation?.length) {
             const ctx = document.getElementById('chartStation');
             if (ctx) analysisCharts.push(new Chart(ctx, {
@@ -689,7 +807,7 @@
                 labels: byStation.map(s => s.station.length > 20 ? s.station.substring(0, 20) + '…' : s.station),
                 datasets: [{ label: 'Passengers', data: byStation.map(s => s.passengers), backgroundColor: CHART_COLORS[0] }]
               },
-              options: { ...opts, indexAxis: 'y', scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } }
+              options: { ...opts, indexAxis: 'y', scales: scaleColors }
             }));
           }
           if (byTimeSlot?.length) {
@@ -711,7 +829,7 @@
                 labels: morning.byStation.map(s => s.station.length > 20 ? s.station.substring(0, 20) + '…' : s.station),
                 datasets: [{ label: 'Passengers', data: morning.byStation.map(s => s.passengers), backgroundColor: CHART_COLORS[0] }]
               },
-              options: { ...opts, indexAxis: 'y', scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } }
+              options: { ...opts, indexAxis: 'y', scales: scaleColors }
             }));
           }
           if (evening?.byStation?.length) {
@@ -722,7 +840,7 @@
                 labels: evening.byStation.map(s => s.station.length > 20 ? s.station.substring(0, 20) + '…' : s.station),
                 datasets: [{ label: 'Passengers', data: evening.byStation.map(s => s.passengers), backgroundColor: CHART_COLORS[2] }]
               },
-              options: { ...opts, indexAxis: 'y', scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } }
+              options: { ...opts, indexAxis: 'y', scales: scaleColors }
             }));
           }
         }
@@ -734,8 +852,20 @@
     document.getElementById('loadAnalysis').addEventListener('click', loadAnalysis);
 
     let mapInstance = null;
+    let mapTileLayer = null;
     let mapCircles = [];
     let mapStationsData = [];
+
+    function syncMapBasemap() {
+      if (!mapInstance) return;
+      var isLight = getTheme() === 'light';
+      var url = isLight
+        ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+      var attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+      if (mapTileLayer) mapInstance.removeLayer(mapTileLayer);
+      mapTileLayer = L.tileLayer(url, { attribution: attribution }).addTo(mapInstance);
+    }
 
     function getMapFilters() {
       const station = (document.getElementById('mapStationFilter').value || '').trim().toLowerCase();
@@ -822,9 +952,7 @@
         }
         if (!mapInstance) {
           mapInstance = L.map('mapContainer').setView([41.9973, 21.428], 12);
-          L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          }).addTo(mapInstance);
+          syncMapBasemap();
         }
         const filtered = applyMapFilters();
         renderMapCircles(filtered);
@@ -989,6 +1117,10 @@
     });
 
     document.getElementById('loadSurveys').addEventListener('click', loadSurveys);
+
+    document.getElementById('themeLight').addEventListener('click', function () { applyTheme('light'); });
+    document.getElementById('themeDark').addEventListener('click', function () { applyTheme('dark'); });
+    syncThemeSwitchUI();
 
     loadStats();
     loadSurveys();

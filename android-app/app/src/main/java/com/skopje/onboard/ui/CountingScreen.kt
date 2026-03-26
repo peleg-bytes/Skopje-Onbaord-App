@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
@@ -94,6 +96,7 @@ fun CountingScreen(
                         },
                         style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         if (serverOnline) stringResource(R.string.server_online) else stringResource(R.string.server_offline),
                         style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
@@ -163,28 +166,40 @@ fun CountingScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Button(
-                    onClick = {
-                        doVibrate()
-                        onReset()
-                    },
-                    modifier = Modifier.weight(1f).height(48.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.material3.MaterialTheme.colorScheme.secondary),
-                ) {
-                    Text(stringResource(R.string.reset), maxLines = 1)
-                }
                 Button(
                     onClick = {
                         doVibrate()
                         onSubmit()
                     },
-                    modifier = Modifier.weight(1f).height(48.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 2.dp),
                 ) {
-                    Text(stringResource(R.string.submit), maxLines = 1)
+                    Text(
+                        stringResource(R.string.submit),
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 2,
+                    )
+                }
+                OutlinedButton(
+                    onClick = {
+                        doVibrate()
+                        onReset()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                ) {
+                    Text(stringResource(R.string.reset), maxLines = 1)
                 }
             }
         }

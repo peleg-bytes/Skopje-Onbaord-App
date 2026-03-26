@@ -1,5 +1,8 @@
 # Android
 android-app/local.properties
+android-app/keystore.properties
+android-app/*.jks
+android-app/release.keystore
 android-app/.gradle/
 android-app/build/
 android-app/app/build/

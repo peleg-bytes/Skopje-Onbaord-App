@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Do not back up local survey DB or DataStore: reinstall should not restore old drafts/IDs via Google backup. -->
+<full-backup-content>
+    <exclude domain="database" path="." />
+    <exclude domain="file" path="datastore" />
+</full-backup-content>

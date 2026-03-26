@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Skopje Onboard Survey</string>
+    <string name="submissions_button">Submissions</string>
 
     <!-- Start Survey -->
     <string name="station_name">Station Name</string>
@@ -8,6 +9,11 @@
     <string name="station_name_label">Station name: %s</string>
     <string name="surveyor_id_label">Surveyor ID: %s</string>
     <string name="start_survey">Start Survey</string>
+    <string name="start_screen_sync_now">Sync now</string>
+    <string name="start_screen_sync_hint">Pending surveys only — each one is sent once, then marked on the server.</string>
+    <string name="sync_toast_nothing_pending">Nothing to sync — all submitted surveys are already on the server.</string>
+    <string name="sync_toast_success">Sync finished — pending surveys were sent.</string>
+    <string name="sync_toast_failed">Could not sync. Check connection and try again.</string>
 
     <!-- Counting -->
     <string name="count">COUNT</string>
@@ -16,23 +22,26 @@
     <string name="reset_confirm">Reset the counter to 0?</string>
     <string name="submit_confirm">Submit this survey?</string>
     <string name="cancel">Cancel</string>
-    <string name="submit">Submit</string>
+    <string name="submit">Submit survey</string>
     <string name="submitting">Submitting…</string>
+    <string name="submit_status_saving">Saving on this device…</string>
+    <string name="submit_status_sending">Trying to reach the server (a few seconds)…</string>
     <string name="reset">Reset</string>
 
-    <!-- GPS -->
-    <string name="gps_acquiring">GPS: acquiring</string>
-    <string name="gps_locked">GPS: locked</string>
-    <string name="gps_unavailable">GPS: unavailable</string>
+    <!-- Location (separate line from server so it is not read as one sentence) -->
+    <string name="gps_acquiring">Location: looking for GPS…</string>
+    <string name="gps_locked">Location: OK (updates while you count)</string>
+    <string name="gps_unavailable">Location: not yet — you can still submit</string>
 
     <!-- Server -->
-    <string name="server_online">Server: Online</string>
-    <string name="server_offline">Server: Offline (sync later)</string>
+    <string name="server_online">Server: online</string>
+    <string name="server_offline">Server: offline — uploads when internet is back</string>
 
-    <!-- Resume -->
-    <string name="resume_previous">Resume previous survey?</string>
-    <string name="resume">Resume</string>
-    <string name="discard">Discard</string>
+    <!-- Continue draft on home -->
+    <string name="continue_survey">Continue survey</string>
+    <string name="start_new_survey_while_draft_title">Survey already in progress</string>
+    <string name="start_new_survey_while_draft_message">Are you sure? There is already a survey underway with more than one passenger recorded. Starting a new survey will discard that draft. Use Continue survey to keep it, or cancel to go back.</string>
+    <string name="start_new_survey_discard_draft">Discard draft and start new</string>
 
     <!-- Settings -->
     <string name="settings">Settings</string>
@@ -40,16 +49,31 @@
     <string name="theme">Theme</string>
     <string name="light_mode">Light Mode</string>
     <string name="dark_mode">Dark Mode</string>
-    <string name="api_url">API URL (Backend)</string>
-    <string name="api_url_hint">https://your-app.vercel.app</string>
-
+    <string name="theme_system">System default</string>
+    <string name="language_option_mk">Macedonian</string>
+    <string name="language_option_en">English</string>
     <!-- Submit feedback -->
-    <string name="submit_success">Submitted successfully</string>
+    <string name="submit_success">Sent successfully — survey is on the server.</string>
+    <string name="submit_queued_waiting_network">Could not reach the server in time. Your survey is saved here. It will send automatically when you have a stable connection or Wi‑Fi.</string>
     <string name="submit_saved_offline">Saved. Will sync when online.</string>
 
     <!-- Exit survey -->
     <string name="exit_survey">Exit</string>
     <string name="exit_survey_confirm">Exit without submitting? This survey will be discarded and not saved.</string>
+
+    <!-- Submitted surveys history -->
+    <string name="submitted_surveys_title">Submitted surveys</string>
+    <string name="submitted_surveys_section_details">Survey details</string>
+    <string name="submitted_surveys_empty">No submitted surveys yet. After you submit, they appear here with sync status.</string>
+    <string name="submitted_surveys_sync_now">Try sync to server now</string>
+    <string name="submitted_surveys_server_status">Server status</string>
+    <string name="survey_status_on_server">Sent — saved on server (confirmed by app)</string>
+    <string name="survey_status_pending_upload">Not sent yet — only on this phone (will upload when online)</string>
+    <string name="submitted_surveys_id_format">Record #%d</string>
+    <string name="submitted_surveys_times_format">Start %1$s · Submit %2$s</string>
+    <string name="submitted_surveys_count_format">Passengers: %d</string>
+    <string name="submitted_surveys_location_format">Location: %s</string>
+    <string name="submitted_surveys_no_location">No GPS fix</string>
 
     <!-- Misc -->
     <string name="back">Back</string>

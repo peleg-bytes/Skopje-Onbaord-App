@@ -13,7 +13,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -54,7 +53,10 @@ fun SettingsScreen(
         ) {
             Text(stringResource(R.string.language), style = androidx.compose.material3.MaterialTheme.typography.titleSmall)
             Spacer(modifier = Modifier.height(8.dp))
-            listOf("mk" to "Македонски", "en" to "English").forEach { (value, label) ->
+            listOf(
+                "mk" to stringResource(R.string.language_option_mk),
+                "en" to stringResource(R.string.language_option_en),
+            ).forEach { (value, label) ->
                 Row(Modifier.fillMaxWidth().clickable { onLanguageChange(value) }, verticalAlignment = Alignment.CenterVertically) {
                     RadioButton(selected = language == value, onClick = { onLanguageChange(value) })
                     Text(label, modifier = Modifier.padding(start = 8.dp))
@@ -67,7 +69,7 @@ fun SettingsScreen(
             listOf(
                 "light" to stringResource(R.string.light_mode),
                 "dark" to stringResource(R.string.dark_mode),
-                "system" to "System"
+                "system" to stringResource(R.string.theme_system),
             ).forEach { (value, label) ->
                 Row(Modifier.fillMaxWidth().clickable { onThemeChange(value) }, verticalAlignment = Alignment.CenterVertically) {
                     RadioButton(selected = theme == value, onClick = { onThemeChange(value) })

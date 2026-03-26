@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Анкета за качување - Скопје</string>
+    <string name="submissions_button">Поднесувања</string>
 
     <!-- Start Survey -->
     <string name="station_name">Име на станица</string>
@@ -8,6 +9,11 @@
     <string name="station_name_label">Име на станица: %s</string>
     <string name="surveyor_id_label">ID на анкетарот: %s</string>
     <string name="start_survey">Започни анкета</string>
+    <string name="start_screen_sync_now">Синхронизирај сега</string>
+    <string name="start_screen_sync_hint">Само анкети што чекаат — секоја се испраќа еднаш, па се означува на серверот.</string>
+    <string name="sync_toast_nothing_pending">Нема што да се синхронизира — сите поднесени анкети се веќе на серверот.</string>
+    <string name="sync_toast_success">Синхронизацијата заврши — чекајќите анкети се испратени.</string>
+    <string name="sync_toast_failed">Не можеше да се синхронизира. Проверете врска и обидете се повторно.</string>
 
     <!-- Counting -->
     <string name="count">БРОЈ</string>
@@ -16,23 +22,26 @@
     <string name="reset_confirm">Ресетирај бројач на 0?</string>
     <string name="submit_confirm">Поднеси ја оваа анкета?</string>
     <string name="cancel">Откажи</string>
-    <string name="submit">Поднеси</string>
+    <string name="submit">Поднеси анкета</string>
     <string name="submitting">Се поднесува…</string>
+    <string name="submit_status_saving">Се зачувува на уредот…</string>
+    <string name="submit_status_sending">Се обидува да се поврзе со серверот (неколку секунди)…</string>
     <string name="reset">Ресетирај</string>
 
-    <!-- GPS -->
-    <string name="gps_acquiring">GPS: се добива</string>
-    <string name="gps_locked">GPS: заклучено</string>
-    <string name="gps_unavailable">GPS: недостапно</string>
+    <!-- Location -->
+    <string name="gps_acquiring">Локација: се бара GPS…</string>
+    <string name="gps_locked">Локација: ОК (се освежува додека броите)</string>
+    <string name="gps_unavailable">Локација: сè уште нема — може да поднесете</string>
 
     <!-- Server -->
-    <string name="server_online">Сервер: Онлајн</string>
-    <string name="server_offline">Сервер: Офлајн (синхронизирај подоцна)</string>
+    <string name="server_online">Сервер: онлајн</string>
+    <string name="server_offline">Сервер: офлајн — испраќање кога ќе има интернет</string>
 
-    <!-- Resume -->
-    <string name="resume_previous">Продолжи со претходна анкета?</string>
-    <string name="resume">Продолжи</string>
-    <string name="discard">Отфрли</string>
+    <!-- Continue draft on home -->
+    <string name="continue_survey">Продолжи анкета</string>
+    <string name="start_new_survey_while_draft_title">Анкетата е веќе во тек</string>
+    <string name="start_new_survey_while_draft_message">Дали си сигурен? Веќе има анкета во тек со повеќе од еден забележан патник. Нова анкета ќе ја отфрли таа скица. Користи „Продолжи анкета“ за да ја задржиш, или откажи.</string>
+    <string name="start_new_survey_discard_draft">Отфрли скица и започни нова</string>
 
     <!-- Settings -->
     <string name="settings">Поставки</string>
@@ -40,16 +49,31 @@
     <string name="theme">Тема</string>
     <string name="light_mode">Светла тема</string>
     <string name="dark_mode">Темна тема</string>
-    <string name="api_url">API URL (Сервер)</string>
-    <string name="api_url_hint">https://your-app.vercel.app</string>
-
+    <string name="theme_system">Системска (автоматски)</string>
+    <string name="language_option_mk">Македонски</string>
+    <string name="language_option_en">Англиски</string>
     <!-- Submit feedback -->
-    <string name="submit_success">Успешно поднесено</string>
+    <string name="submit_success">Успешно испратено — анкетата е на серверот.</string>
+    <string name="submit_queued_waiting_network">Не можеше да се стигне до серверот навреме. Анкетата е зачувана овде. Ќе се испрати автоматски кога ќе имате стабилна врска или Wi‑Fi.</string>
     <string name="submit_saved_offline">Зачувано. Ќе се синхронизира кога ќе биде онлајн.</string>
 
     <!-- Exit survey -->
     <string name="exit_survey">Излез</string>
     <string name="exit_survey_confirm">Излези без поднесување? Оваа анкета ќе биде отфрлена и нема да се зачува.</string>
+
+    <!-- Submitted surveys history -->
+    <string name="submitted_surveys_title">Поднесени анкети</string>
+    <string name="submitted_surveys_section_details">Детали за анкетата</string>
+    <string name="submitted_surveys_empty">Сè уште нема поднесени анкети. По поднесување, тука се појавуваат со статус на синхронизација.</string>
+    <string name="submitted_surveys_sync_now">Обиди се сега да се испрати на сервер</string>
+    <string name="submitted_surveys_server_status">Статус на сервер</string>
+    <string name="survey_status_on_server">Испратено — зачувано на сервер (потврдено од апликацијата)</string>
+    <string name="survey_status_pending_upload">Сè уште не е испратено — само на телефонот (ќе се испрати кога ќе има врска)</string>
+    <string name="submitted_surveys_id_format">Запис #%d</string>
+    <string name="submitted_surveys_times_format">Почеток %1$s · Поднесување %2$s</string>
+    <string name="submitted_surveys_count_format">Патници: %d</string>
+    <string name="submitted_surveys_location_format">Локација: %s</string>
+    <string name="submitted_surveys_no_location">Нема GPS</string>
 
     <!-- Misc -->
     <string name="back">Назад</string>
