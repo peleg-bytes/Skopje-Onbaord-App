@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { date, dateFrom, dateTo, station } = req.query || {};
+  const { date, dateFrom, dateTo, station, id } = req.query || {};
 
   const supabaseResult = getSupabaseClient();
   if (supabaseResult.error) {
@@ -23,25 +23,55 @@ export default async function handler(req, res) {
   }
   const supabase = supabaseResult.client;
 
-  let query = supabase.from('surveys').select('*').order('created_at', { ascending: true });
+  let rows;
+  let filename;
 
-  if (dateFrom || dateTo || date) {
-    const from = dateFrom || date;
-    const to = dateTo || date;
-    if (from) query = query.gte('created_at', `${from}T00:00:00.000Z`);
-    if (to) query = query.lte('created_at', `${to}T23:59:59.999Z`);
-  }
+  if (id && typeof id === 'string' && id.trim()) {
+    const surveyId = id.trim();
+    const { data: row, error } = await supabase
+      .from('surveys')
+      .select('*')
+      .eq('id', surveyId)
+      .maybeSingle();
 
-  if (station) {
-    query = query.ilike('station_name', `%${station}%`);
-  }
+    if (error) {
+      console.error('Supabase query error:', error);
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      return res.status(500).json({ error: 'Failed to fetch survey: ' + sanitizeSupabaseError(error) });
+    }
+    if (!row) {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      return res.status(404).json({ error: 'Survey not found' });
+    }
+    rows = [row];
+    const dateStr = row.created_at ? new Date(row.created_at).toISOString().split('T')[0] : 'survey';
+    const stationSlug = (row.station_name || 'all').replace(/\s+/g, '_').substring(0, 25);
+    const shortId = surveyId.replace(/-/g, '').substring(0, 8);
+    filename = `survey_${dateStr}_${stationSlug}_${shortId}.xlsx`;
+  } else {
+    let query = supabase.from('surveys').select('*').order('created_at', { ascending: true });
 
-  const { data: rows, error } = await query;
+    if (dateFrom || dateTo || date) {
+      const from = dateFrom || date;
+      const to = dateTo || date;
+      if (from) query = query.gte('created_at', `${from}T00:00:00.000Z`);
+      if (to) query = query.lte('created_at', `${to}T23:59:59.999Z`);
+    }
 
-  if (error) {
-    console.error('Supabase query error:', error);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    return res.status(500).json({ error: 'Failed to fetch surveys: ' + sanitizeSupabaseError(error) });
+    if (station) {
+      query = query.ilike('station_name', `%${station}%`);
+    }
+
+    const result = await query;
+    if (result.error) {
+      console.error('Supabase query error:', result.error);
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      return res.status(500).json({ error: 'Failed to fetch surveys: ' + sanitizeSupabaseError(result.error) });
+    }
+    rows = result.data;
+    const stationSlug = (station || 'all').replace(/\s+/g, '_').substring(0, 30);
+    const dateStr = (dateFrom && dateTo) ? `${dateFrom}_to_${dateTo}` : (dateFrom || dateTo || date || new Date().toISOString().split('T')[0]);
+    filename = `${dateStr}_${stationSlug}.xlsx`;
   }
 
   const workbook = new ExcelJS.Workbook();
@@ -75,10 +105,6 @@ export default async function handler(req, res) {
       passengerCount: r.passenger_count,
     });
   }
-
-  const stationSlug = (station || 'all').replace(/\s+/g, '_').substring(0, 30);
-  const dateStr = (dateFrom && dateTo) ? `${dateFrom}_to_${dateTo}` : (dateFrom || dateTo || date || new Date().toISOString().split('T')[0]);
-  const filename = `${dateStr}_${stationSlug}.xlsx`;
 
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

@@ -339,12 +339,20 @@
           </div>
         </div>
         <div class="section-body">
-          <div class="export-actions" style="margin-bottom: 1rem;">
+          <div class="export-actions" style="margin-bottom: 0.5rem;">
             <button class="btn btn-secondary btn-sm" id="previewBtn">Preview</button>
-            <button class="btn btn-primary btn-sm" id="downloadExcelBtn">Download Excel</button>
-            <button class="btn btn-primary btn-sm" id="downloadAllExcels">Download All Excels</button>
-            <button class="btn btn-primary btn-sm" id="downloadAggregatedExcel">Download Aggregated Excel</button>
+            <button class="btn btn-primary btn-sm" id="downloadExcelBtn"
+              title="One Excel file for rows matching From date, To date, and Station filters above.">Export filtered (Excel)</button>
+            <button class="btn btn-primary btn-sm" id="downloadAllExcels"
+              title="ZIP containing many workbooks: one Excel per calendar date and station combination.">Download ZIP (one Excel per day &amp; station)</button>
+            <button class="btn btn-primary btn-sm" id="downloadAggregatedExcel"
+              title="Single workbook listing every survey in one sheet; includes a suggested filename column per row.">Download all surveys (one Excel)</button>
           </div>
+          <p class="analysis-note" style="margin-bottom: 1rem;">
+            <strong>Filtered</strong> uses the filters above.
+            <strong>ZIP</strong> splits exports by date + station (many files).
+            <strong>One Excel (all)</strong> is one sheet with every row (not the same as ZIP).
+          </p>
           <div id="exportMessage"></div>
           <div class="table-wrap">
             <table>
@@ -359,7 +367,7 @@
                   <th>Lat</th>
                   <th>Lng</th>
                   <th>Count</th>
-                  <th></th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="surveysTable">
@@ -487,7 +495,6 @@
       document.documentElement.setAttribute('data-theme', theme);
       try { localStorage.setItem(THEME_STORAGE_KEY, theme); } catch (e) {}
       syncThemeSwitchUI();
-      if (typeof syncMapBasemap === 'function') syncMapBasemap();
       var analysisTab = document.getElementById('tab-analysis');
       if (analysisTab && analysisTab.classList.contains('active') && typeof loadAnalysis === 'function') {
         loadAnalysis();
@@ -530,7 +537,7 @@
 
     async function loadSurveys() {
       const tbody = document.getElementById('surveysTable');
-      tbody.innerHTML = '<tr><td colspan="10" class="empty-state">Loading...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="empty-state">Loading…</td></tr>';
       const dateFrom = document.getElementById('filterDateFrom').value;
       const dateTo = document.getElementById('filterDateTo').value;
       const station = document.getElementById('filterStation').value.trim();
@@ -565,10 +572,46 @@
               <td>${s.latitude ?? '—'}</td>
               <td>${s.longitude ?? '—'}</td>
               <td>${s.passenger_count}</td>
-              <td><button class="btn btn-sm btn-delete survey-delete" data-id="${escapeHtml(s.id)}" title="Delete">Delete</button></td>
+              <td class="btn-cell">
+                <button type="button" class="btn btn-sm btn-secondary survey-download" data-id="${escapeHtml(s.id)}" title="Download this survey as Excel">Download</button>
+                <button type="button" class="btn btn-sm btn-delete survey-delete" data-id="${escapeHtml(s.id)}" title="Delete this survey">Delete</button>
+              </td>
             </tr>
           `;
         }).join('');
+        tbody.querySelectorAll('.survey-download').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const id = btn.dataset.id;
+            btn.disabled = true;
+            try {
+              const r = await fetch(base + '/api/export?id=' + encodeURIComponent(id));
+              if (!r.ok) {
+                let msg = 'Download failed';
+                try {
+                  const j = await r.json();
+                  if (j.error) msg = j.error;
+                } catch (_) {}
+                throw new Error(msg);
+              }
+              const blob = await r.blob();
+              const cd = r.headers.get('Content-Disposition');
+              let filename = 'survey.xlsx';
+              if (cd) {
+                const m = cd.match(/filename="([^"]+)"/);
+                if (m) filename = m[1];
+              }
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(blob);
+              a.download = filename;
+              a.click();
+              URL.revokeObjectURL(a.href);
+            } catch (e) {
+              alert(e.message || 'Download failed');
+            } finally {
+              btn.disabled = false;
+            }
+          });
+        });
         tbody.querySelectorAll('.survey-delete').forEach(btn => {
           btn.addEventListener('click', async () => {
             if (!confirm('Delete this survey?')) return;
@@ -858,13 +901,10 @@
 
     function syncMapBasemap() {
       if (!mapInstance) return;
-      var isLight = getTheme() === 'light';
-      var url = isLight
-        ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-        : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-      var attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+      var url = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+      var attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>';
       if (mapTileLayer) mapInstance.removeLayer(mapTileLayer);
-      mapTileLayer = L.tileLayer(url, { attribution: attribution }).addTo(mapInstance);
+      mapTileLayer = L.tileLayer(url, { attribution: attribution, maxZoom: 19 }).addTo(mapInstance);
     }
 
     function getMapFilters() {
