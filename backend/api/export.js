@@ -1,4 +1,5 @@
 import { getSupabaseClient, sanitizeSupabaseError } from '../lib/supabase.js';
+import { formatSurveyCalendarDate, formatSurveyClockTime } from '../lib/display-timezone.js';
 import ExcelJS from 'exceljs';
 
 export default async function handler(req, res) {
@@ -44,7 +45,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'Survey not found' });
     }
     rows = [row];
-    const dateStr = row.created_at ? new Date(row.created_at).toISOString().split('T')[0] : 'survey';
+    const dateStr = row.created_at ? formatSurveyCalendarDate(row.created_at) : 'survey';
     const stationSlug = (row.station_name || 'all').replace(/\s+/g, '_').substring(0, 25);
     const shortId = surveyId.replace(/-/g, '').substring(0, 8);
     filename = `survey_${dateStr}_${stationSlug}_${shortId}.xlsx`;
@@ -70,7 +71,9 @@ export default async function handler(req, res) {
     }
     rows = result.data;
     const stationSlug = (station || 'all').replace(/\s+/g, '_').substring(0, 30);
-    const dateStr = (dateFrom && dateTo) ? `${dateFrom}_to_${dateTo}` : (dateFrom || dateTo || date || new Date().toISOString().split('T')[0]);
+    const dateStr = (dateFrom && dateTo)
+      ? `${dateFrom}_to_${dateTo}`
+      : (dateFrom || dateTo || date || formatSurveyCalendarDate(new Date().toISOString()));
     filename = `${dateStr}_${stationSlug}.xlsx`;
   }
 
@@ -81,7 +84,7 @@ export default async function handler(req, res) {
     { header: 'Date', key: 'date', width: 12 },
     { header: 'StartTime', key: 'startTime', width: 12 },
     { header: 'EndTime', key: 'endTime', width: 12 },
-    { header: 'SubmitTime', key: 'submitTime', width: 12 },
+    { header: 'Received (Skopje)', key: 'receivedTime', width: 16 },
     { header: 'SurveyorID', key: 'surveyorId', width: 14 },
     { header: 'StationName', key: 'stationName', width: 20 },
     { header: 'Latitude', key: 'latitude', width: 12 },
@@ -90,14 +93,13 @@ export default async function handler(req, res) {
   ];
 
   const timeOnly = (v) => (v && v.includes(' ')) ? v.split(' ')[1] : (v || '');
-  const serverTime = (iso) => iso ? new Date(iso).toISOString().split('T')[1].split('.')[0] : '';
   for (const r of rows || []) {
-    const dateStr = r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : '';
+    const dateStr = r.created_at ? formatSurveyCalendarDate(r.created_at) : '';
     worksheet.addRow({
       date: dateStr,
       startTime: timeOnly(r.start_time) || r.start_time || '',
       endTime: timeOnly(r.submit_time) || r.submit_time || '',
-      submitTime: serverTime(r.created_at),
+      receivedTime: formatSurveyClockTime(r.created_at),
       surveyorId: r.surveyor_id,
       stationName: r.station_name,
       latitude: r.latitude ?? '',

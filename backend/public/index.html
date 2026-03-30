@@ -352,6 +352,7 @@
             <strong>Filtered</strong> uses the filters above.
             <strong>ZIP</strong> splits exports by date + station (many files).
             <strong>One Excel (all)</strong> is one sheet with every row (not the same as ZIP).
+            <strong>Start</strong> and <strong>End</strong> use the surveyor&rsquo;s phone clock. <strong>Received</strong> is when the server stored the row (Europe/Skopje).
           </p>
           <div id="exportMessage"></div>
           <div class="table-wrap">
@@ -360,8 +361,8 @@
                 <tr>
                   <th>Date</th>
                   <th>Start</th>
-                  <th>End</th>
-                  <th>Submit</th>
+                  <th title="Time on the survey device when counting ended or the survey was sent">End</th>
+                  <th title="When the server stored the row (Europe/Skopje)">Received (Skopje)</th>
                   <th>Surveyor</th>
                   <th>Station</th>
                   <th>Lat</th>
@@ -448,11 +449,11 @@
           <table>
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Start</th>
-                <th>End</th>
-                <th>Submit</th>
-                <th>Surveyor</th>
+                  <th>Date</th>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th>Received (Skopje)</th>
+                  <th>Surveyor</th>
                 <th>Station</th>
                 <th>Lat</th>
                 <th>Lng</th>
@@ -466,6 +467,7 @@
     </div>
   </div>
 
+  <script src="js/display-timezone.js"></script>
   <script>
     const base = window.location.origin;
     const THEME_STORAGE_KEY = 'skopje-admin-theme';
@@ -555,18 +557,17 @@
           return;
         }
         tbody.innerHTML = surveys.map(s => {
-          const dateStr = s.created_at ? new Date(s.created_at).toISOString().split('T')[0] : '—';
+          const dateStr = s.created_at ? (skopjeSurveyDate(s.created_at) || '—') : '—';
           const timeOnly = (v) => (v && v.includes(' ')) ? v.split(' ')[1] : (v || '—');
-          const serverTime = (iso) => iso ? new Date(iso).toISOString().split('T')[1].split('.')[0] : '—';
           const startT = timeOnly(s.start_time) || s.start_time || '—';
           const endT = timeOnly(s.submit_time) || s.submit_time || '—';
-          const submitT = serverTime(s.created_at);
+          const receivedT = s.created_at ? (skopjeSurveyTime(s.created_at) || '—') : '—';
           return `
             <tr data-id="${escapeHtml(s.id)}">
               <td>${dateStr}</td>
               <td>${startT}</td>
               <td>${endT}</td>
-              <td>${submitT}</td>
+              <td>${receivedT}</td>
               <td>${escapeHtml(s.surveyor_id)}</td>
               <td>${escapeHtml(s.station_name)}</td>
               <td>${s.latitude ?? '—'}</td>
@@ -662,7 +663,7 @@
             <td>${escapeHtml(row.date)}</td>
             <td>${escapeHtml(row.startTime)}</td>
             <td>${escapeHtml(row.endTime)}</td>
-            <td>${escapeHtml(row.submitTime)}</td>
+            <td>${escapeHtml(row.receivedTime)}</td>
             <td>${escapeHtml(row.surveyorId)}</td>
             <td>${escapeHtml(row.stationName)}</td>
             <td>${row.latitude ?? '—'}</td>
@@ -1069,7 +1070,7 @@
       const dateFrom = document.getElementById('filterDateFrom').value;
       const dateTo = document.getElementById('filterDateTo').value;
       const station = document.getElementById('filterStation').value.trim();
-      const dateStr = (dateFrom && dateTo) ? `${dateFrom}_to_${dateTo}` : (dateFrom || dateTo || new Date().toISOString().split('T')[0]);
+      const dateStr = (dateFrom && dateTo) ? `${dateFrom}_to_${dateTo}` : (dateFrom || dateTo || skopjeSurveyDate(new Date().toISOString()));
       const stationSlug = (station || 'all').replace(/\s+/g, '_').substring(0, 25);
       showPreviewModal(params, `${dateStr}_${stationSlug}.xlsx`);
     });

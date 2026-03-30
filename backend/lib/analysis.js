@@ -1,3 +1,5 @@
+import { formatSurveyCalendarDate, getSurveyLocalHour } from './display-timezone.js';
+
 /**
  * Shared analysis aggregation logic.
  * @param {import('@supabase/supabase-js').SupabaseClient} supabase
@@ -42,9 +44,8 @@ export async function runAnalysis(supabase, { dateFrom, dateTo } = {}) {
   for (const r of rows || []) {
     const station = r.station_name || 'Unknown';
     const count = Number(r.passenger_count) || 0;
-    const created = r.created_at ? new Date(r.created_at) : null;
-    const dateStr = created ? created.toISOString().split('T')[0] : '';
-    const hour = created ? created.getUTCHours() : null;
+    const dateStr = r.created_at ? formatSurveyCalendarDate(r.created_at) : '';
+    const hour = getSurveyLocalHour(r.created_at);
 
     totalSurveys += 1;
     totalPassengers += count;

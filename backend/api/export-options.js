@@ -1,4 +1,5 @@
 import { getSupabaseClient, sanitizeSupabaseError } from '../lib/supabase.js';
+import { formatSurveyCalendarDate } from '../lib/display-timezone.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
@@ -36,7 +37,7 @@ export default async function handler(req, res) {
   const combos = new Map();
 
   for (const r of rows || []) {
-    const dateStr = r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : null;
+    const dateStr = r.created_at ? formatSurveyCalendarDate(r.created_at) : null;
     const station = r.station_name || 'Unknown';
     if (dateStr) dateSet.add(dateStr);
     stationSet.add(station);

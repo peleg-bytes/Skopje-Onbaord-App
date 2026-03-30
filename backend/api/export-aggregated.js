@@ -1,4 +1,5 @@
 import { getSupabaseClient, sanitizeSupabaseError } from '../lib/supabase.js';
+import { formatSurveyCalendarDate, formatSurveyClockTime } from '../lib/display-timezone.js';
 import ExcelJS from 'exceljs';
 
 export default async function handler(req, res) {
@@ -40,7 +41,7 @@ export default async function handler(req, res) {
     { header: 'Date', key: 'date', width: 12 },
     { header: 'StartTime', key: 'startTime', width: 12 },
     { header: 'EndTime', key: 'endTime', width: 12 },
-    { header: 'SubmitTime', key: 'submitTime', width: 12 },
+    { header: 'Received (Skopje)', key: 'receivedTime', width: 16 },
     { header: 'SurveyorID', key: 'surveyorId', width: 14 },
     { header: 'StationName', key: 'stationName', width: 20 },
     { header: 'Latitude', key: 'latitude', width: 12 },
@@ -49,9 +50,8 @@ export default async function handler(req, res) {
   ];
 
   const timeOnly = (v) => (v && v.includes(' ')) ? v.split(' ')[1] : (v || '');
-  const serverTime = (iso) => iso ? new Date(iso).toISOString().split('T')[1].split('.')[0] : '';
   for (const r of rows || []) {
-    const dateStr = r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : '';
+    const dateStr = r.created_at ? formatSurveyCalendarDate(r.created_at) : '';
     const stationSlug = (r.station_name || 'all').replace(/\s+/g, '_').substring(0, 25);
     const excelName = `${dateStr}_${stationSlug}.xlsx`;
     worksheet.addRow({
@@ -59,7 +59,7 @@ export default async function handler(req, res) {
       date: dateStr,
       startTime: timeOnly(r.start_time) || r.start_time || '',
       endTime: timeOnly(r.submit_time) || r.submit_time || '',
-      submitTime: serverTime(r.created_at),
+      receivedTime: formatSurveyClockTime(r.created_at),
       surveyorId: r.surveyor_id,
       stationName: r.station_name,
       latitude: r.latitude ?? '',

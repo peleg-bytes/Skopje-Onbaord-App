@@ -1,4 +1,5 @@
 import { getSupabaseClient, sanitizeSupabaseError } from '../lib/supabase.js';
+import { formatSurveyCalendarDate, formatSurveyClockTime } from '../lib/display-timezone.js';
 
 /**
  * Returns the same row data as the Excel export, for in-browser preview.
@@ -46,12 +47,11 @@ export default async function handler(req, res) {
   }
 
   const timeOnly = (v) => (v && v.includes(' ')) ? v.split(' ')[1] : (v || '');
-  const serverTime = (iso) => iso ? new Date(iso).toISOString().split('T')[1].split('.')[0] : '';
   const previewRows = (rows || []).map((r) => ({
-    date: r.created_at ? new Date(r.created_at).toISOString().split('T')[0] : '',
+    date: r.created_at ? formatSurveyCalendarDate(r.created_at) : '',
     startTime: timeOnly(r.start_time) || r.start_time || '',
     endTime: timeOnly(r.submit_time) || r.submit_time || '',
-    submitTime: serverTime(r.created_at),
+    receivedTime: formatSurveyClockTime(r.created_at),
     surveyorId: r.surveyor_id,
     stationName: r.station_name,
     latitude: r.latitude ?? '',
